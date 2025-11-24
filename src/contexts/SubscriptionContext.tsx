@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
+import { useNotification } from './NotificationContext'
 
 interface Subscription {
   subscriberId: string
@@ -20,6 +21,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth()
+  const { addNotification } = useNotification()
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
 
   useEffect(() => {
@@ -49,6 +51,15 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
           timestamp: Date.now(),
         },
       ])
+
+      // Send notification to the user being subscribed to
+      addNotification({
+        type: 'subscription',
+        recipientUsername: username,
+        actorUsername: user.username,
+        actorName: `${user.firstName} ${user.lastName}`,
+        message: 'subscribed to you',
+      })
     }
   }
 

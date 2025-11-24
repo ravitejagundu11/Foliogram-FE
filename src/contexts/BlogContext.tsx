@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react'
 import type { BlogPost, BlogComment, BlogReply, CreatePostData } from '../types/blog'
 import { useAuth } from './AuthContext'
+import { useNotification } from './NotificationContext'
 
 interface BlogContextType {
   posts: BlogPost[]
@@ -20,6 +21,7 @@ const BlogContext = createContext<BlogContextType | undefined>(undefined)
 export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [posts, setPosts] = useState<BlogPost[]>([])
   const { user } = useAuth()
+  const { addNotification } = useNotification()
 
   useEffect(() => {
     const storedPosts = localStorage.getItem('blogPosts')
@@ -55,6 +57,22 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updatedPosts = [newPost, ...posts]
     savePosts(updatedPosts)
+
+    // Send notifications to tagged users
+    data.taggedUsers.forEach((taggedUsername) => {
+      if (taggedUsername !== user.username) {
+        addNotification({
+          type: 'mention',
+          recipientUsername: taggedUsername,
+          actorUsername: user.username,
+          actorName: `${user.firstName} ${user.lastName}`,
+          postId: newPost.id,
+          postTitle: newPost.title,
+          message: 'mentioned you in a post',
+        })
+      }
+    })
+
     return newPost.id
   }
 
@@ -66,6 +84,11 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const likePost = (postId: string) => {
     if (!user) return
 
+    const post = posts.find((p) => p.id === postId)
+    if (!post) return
+
+    const isLiking = !post.likes.includes(user.username)
+
     const updatedPosts = posts.map((post) => {
       if (post.id === postId) {
         const likes = post.likes.includes(user.username)
@@ -76,9 +99,27 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return post
     })
     savePosts(updatedPosts)
+
+    // Send notification if liking and not own post
+    if (isLiking && post.author !== user.username) {
+      addNotification({
+        type: 'like',
+        recipientUsername: post.author,
+        actorUsername: user.username,
+        actorName: `${user.firstName} ${user.lastName}`,
+        postId: post.id,
+        postTitle: post.title,
+        message: 'liked your post',
+      })
+    }
   }
 
   const sharePost = (postId: string) => {
+    if (!user) return
+
+    const post = posts.find((p) => p.id === postId)
+    if (!post) return
+
     const updatedPosts = posts.map((post) => {
       if (post.id === postId) {
         return { ...post, shares: post.shares + 1 }
@@ -86,10 +127,26 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return post
     })
     savePosts(updatedPosts)
+
+    // Send notification if not own post
+    if (post.author !== user.username) {
+      addNotification({
+        type: 'share',
+        recipientUsername: post.author,
+        actorUsername: user.username,
+        actorName: `${user.firstName} ${user.lastName}`,
+        postId: post.id,
+        postTitle: post.title,
+        message: 'shared your post',
+      })
+    }
   }
 
   const addComment = (postId: string, content: string) => {
     if (!user) return
+
+    const post = posts.find((p) => p.id === postId)
+    if (!post) return
 
     const newComment: BlogComment = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -108,10 +165,29 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return post
     })
     savePosts(updatedPosts)
+
+    // Send notification if not own post
+    if (post.author !== user.username) {
+      addNotification({
+        type: 'comment',
+        recipientUsername: post.author,
+        actorUsername: user.username,
+        actorName: `${user.firstName} ${user.lastName}`,
+        postId: post.id,
+        postTitle: post.title,
+        message: 'commented on your post',
+      })
+    }
   }
 
   const addReply = (postId: string, commentId: string, content: string) => {
     if (!user) return
+
+    const post = posts.find((p) => p.id === postId)
+    if (!post) return
+
+    const comment = post.comments.find((c) => c.id === commentId)
+    if (!comment) return
 
     const newReply: BlogReply = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -135,6 +211,20 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return post
     })
     savePosts(updatedPosts)
+
+    // Send notification to comment author if not replying to own comment
+    if (comment.author !== user.username) {
+      addNotification({
+        type: 'reply',
+        recipientUsername: comment.author,
+        actorUsername: user.username,
+        actorName: `${user.firstName} ${user.lastName}`,
+        postId: post.id,
+        postTitle: post.title,
+        commentId: comment.id,
+        message: 'replied to your comment',
+      })
+    }
   }
 
   const deleteComment = (postId: string, commentId: string) => {

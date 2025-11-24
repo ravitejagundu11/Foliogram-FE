@@ -3,6 +3,7 @@ import { AuthProvider } from '@contexts/AuthContext'
 import { UserManagementProvider } from '@contexts/UserManagementContext'
 import { BlogProvider } from '@contexts/BlogContext'
 import { SubscriptionProvider } from '@contexts/SubscriptionContext'
+import { NotificationProvider } from '@contexts/NotificationContext'
 import Layout from '@components/layout/Layout'
 import ProtectedRoute from '@components/ProtectedRoute'
 import HomePage from '@pages/HomePage'
@@ -17,15 +18,18 @@ import BlogListPage from '@pages/BlogListPage'
 import BlogDetailPage from '@pages/BlogDetailPage'
 import CreatePostPage from '@pages/CreatePostPage'
 import UserSearchPage from '@pages/UserSearchPage'
+import AnalyticsPage from '@pages/AnalyticsPage'
+import NotificationsPage from '@pages/NotificationsPage'
 import NotFound from '@pages/NotFound'
 
 function App() {
   return (
     <AuthProvider>
       <UserManagementProvider>
-        <BlogProvider>
-          <SubscriptionProvider>
-            <Routes>
+        <NotificationProvider>
+          <BlogProvider>
+            <SubscriptionProvider>
+              <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="about" element={<AboutPage />} />
@@ -81,6 +85,22 @@ function App() {
                 }
               />
               <Route
+                path="analytics"
+                element={
+                  <ProtectedRoute allowedRoles={["user", "admin", "recruiter"]}>
+                    <AnalyticsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="notifications"
+                element={
+                  <ProtectedRoute allowedRoles={["user", "admin", "recruiter"]}>
+                    <NotificationsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="admin/user-management"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
@@ -91,8 +111,9 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
-          </SubscriptionProvider>
-        </BlogProvider>
+            </SubscriptionProvider>
+          </BlogProvider>
+        </NotificationProvider>
       </UserManagementProvider>
     </AuthProvider>
   )
