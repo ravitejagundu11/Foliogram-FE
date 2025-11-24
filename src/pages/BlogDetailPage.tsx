@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useBlog } from '@contexts/BlogContext'
 import { useAuth } from '@contexts/AuthContext'
+import UserProfileModal from '@components/UserProfileModal'
 import '../styles/BlogDetailPage.css'
 
 const BlogDetailPage = () => {
@@ -14,6 +15,7 @@ const BlogDetailPage = () => {
   const [commentText, setCommentText] = useState('')
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({})
   const [showReplyBox, setShowReplyBox] = useState<{ [key: string]: boolean }>({})
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
 
   const post = id ? getPostById(id) : undefined
 
@@ -111,7 +113,9 @@ const BlogDetailPage = () => {
         <header className="post-header">
           <h1 className="post-title">{post.title}</h1>
           <div className="post-meta">
-            <span className="post-author">{post.authorName}</span>
+            <span className="post-author clickable" onClick={() => setSelectedUser(post.author)}>
+              {post.authorName}
+            </span>
             <span className="post-date">{formatDate(post.timestamp)}</span>
             <span className="post-role-badge">{post.authorRole}</span>
           </div>
@@ -190,7 +194,9 @@ const BlogDetailPage = () => {
           {post.comments.map((comment) => (
             <div key={comment.id} className="comment-item">
               <div className="comment-header">
-                <span className="comment-author">{comment.authorName}</span>
+                <span className="comment-author clickable" onClick={() => setSelectedUser(comment.author)}>
+                  {comment.authorName}
+                </span>
                 <span className="comment-date">{formatDate(comment.timestamp)}</span>
               </div>
               <p className="comment-content">{comment.content}</p>
@@ -236,7 +242,9 @@ const BlogDetailPage = () => {
                   {comment.replies.map((reply) => (
                     <div key={reply.id} className="reply-item">
                       <div className="reply-header">
-                        <span className="reply-author">{reply.authorName}</span>
+                        <span className="reply-author clickable" onClick={() => setSelectedUser(reply.author)}>
+                          {reply.authorName}
+                        </span>
                         <span className="reply-date">{formatDate(reply.timestamp)}</span>
                       </div>
                       <p className="reply-content">{reply.content}</p>
@@ -256,6 +264,10 @@ const BlogDetailPage = () => {
           ))}
         </div>
       </section>
+
+      {selectedUser && (
+        <UserProfileModal username={selectedUser} onClose={() => setSelectedUser(null)} />
+      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '@contexts/AuthContext'
 import { UserManagementProvider } from '@contexts/UserManagementContext'
 import { BlogProvider } from '@contexts/BlogContext'
+import { SubscriptionProvider } from '@contexts/SubscriptionContext'
 import Layout from '@components/layout/Layout'
 import ProtectedRoute from '@components/ProtectedRoute'
 import HomePage from '@pages/HomePage'
@@ -15,6 +16,7 @@ import UserManagementPage from '@pages/UserManagementPage'
 import BlogListPage from '@pages/BlogListPage'
 import BlogDetailPage from '@pages/BlogDetailPage'
 import CreatePostPage from '@pages/CreatePostPage'
+import UserSearchPage from '@pages/UserSearchPage'
 import NotFound from '@pages/NotFound'
 
 function App() {
@@ -22,7 +24,8 @@ function App() {
     <AuthProvider>
       <UserManagementProvider>
         <BlogProvider>
-          <Routes>
+          <SubscriptionProvider>
+            <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="about" element={<AboutPage />} />
@@ -70,6 +73,14 @@ function App() {
                 }
               />
               <Route
+                path="users/search"
+                element={
+                  <ProtectedRoute allowedRoles={["user", "admin", "recruiter"]}>
+                    <UserSearchPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="admin/user-management"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
@@ -80,6 +91,7 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
+          </SubscriptionProvider>
         </BlogProvider>
       </UserManagementProvider>
     </AuthProvider>

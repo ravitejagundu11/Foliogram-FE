@@ -62,6 +62,11 @@ const Header = () => {
                 Blog
               </Link>
             )}
+            {isAuthenticated && (
+              <Link to="/users/search" className={getLinkClassName('/users/search')}>
+                Users
+              </Link>
+            )}
             <Link to="/about" className={getLinkClassName('/about')}>
               About
             </Link>

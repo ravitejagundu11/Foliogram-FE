@@ -75,6 +75,16 @@
   color: #000000;
 }
 
+.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clickable:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
 .post-date {
   color: #9ca3af;
 }

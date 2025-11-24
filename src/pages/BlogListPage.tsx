@@ -1,6 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useBlog } from '@contexts/BlogContext'
 import { useAuth } from '@contexts/AuthContext'
+import UserProfileModal from '@components/UserProfileModal'
 import '../styles/BlogListPage.css'
 
 const BlogListPage = () => {
@@ -8,6 +10,7 @@ const BlogListPage = () => {
   const { posts, likePost, sharePost, deletePost } = useBlog()
   const { user, hasRole } = useAuth()
   const isAdmin = hasRole(['admin'])
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp)
@@ -85,7 +88,16 @@ const BlogListPage = () => {
                   <h2 className="post-card-title">{post.title}</h2>
 
                   <div className="post-card-meta">
-                    <span className="post-author">{post.authorName}</span>
+                    <span 
+                      className="post-author clickable" 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setSelectedUser(post.author)
+                      }}
+                    >
+                      {post.authorName}
+                    </span>
                     <span className="post-date">{formatDate(post.timestamp)}</span>
                   </div>
 
@@ -123,6 +135,10 @@ const BlogListPage = () => {
             )
           })}
         </div>
+      )}
+
+      {selectedUser && (
+        <UserProfileModal username={selectedUser} onClose={() => setSelectedUser(null)} />
       )}
     </div>
   )
