@@ -1,8 +1,17 @@
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@contexts/AuthContext'
+import { useEffect } from 'react'
 import '../styles/HomePage.css'
 
 const HomePage = () => {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard')
+    }
+  }, [isAuthenticated, navigate])
 
   return (
     <div className="home-container">

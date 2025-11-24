@@ -47,12 +47,19 @@ const Header = () => {
             <h1 className="text-2xl font-extrabold text-gray-900">Foliogram</h1>
           </Link>
           <div className="flex items-center space-x-4">
-            <Link to="/" className={getLinkClassName('/')}>
-              Home
-            </Link>
+            {!isAuthenticated && (
+              <Link to="/" className={getLinkClassName('/')}>
+                Home
+              </Link>
+            )}
             {isAuthenticated && (
               <Link to="/dashboard" className={getLinkClassName('/dashboard')}>
                 Dashboard
+              </Link>
+            )}
+            {isAuthenticated && (
+              <Link to="/blog" className={getLinkClassName('/blog')}>
+                Blog
               </Link>
             )}
             <Link to="/about" className={getLinkClassName('/about')}>
