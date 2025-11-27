@@ -7,6 +7,10 @@ import { NotificationProvider } from '@contexts/NotificationContext'
 import Layout from '@components/layout/Layout'
 import ProtectedRoute from '@components/ProtectedRoute'
 import HomePage from '@pages/HomePage'
+import WelcomePage from '@pages/WelcomePage'
+import TemplateSelection from '@pages/TemplateSelection'
+import PortfolioConfig from '@pages/PortfolioConfig'
+import PortfolioPublic from '@pages/PortfolioPublic'
 import AboutPage from '@pages/AboutPage'
 import ContactPage from '@pages/ContactPage'
 import DashboardPage from '@pages/DashboardPage'
@@ -30,8 +34,29 @@ function App() {
           <BlogProvider>
             <SubscriptionProvider>
               <Routes>
+            {/* Public Portfolio View - No Layout */}
+            <Route path="/portfolio/:portfolioId" element={<PortfolioPublic />} />
+            <Route path="/:username" element={<PortfolioPublic />} />
+            
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
+              <Route path="welcome" element={<WelcomePage />} />
+              <Route
+                path="templates"
+                element={
+                  <ProtectedRoute allowedRoles={["user", "admin", "recruiter"]}>
+                    <TemplateSelection />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="portfolio/configure/:templateId"
+                element={
+                  <ProtectedRoute allowedRoles={["user", "admin", "recruiter"]}>
+                    <PortfolioConfig />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="about" element={<AboutPage />} />
               <Route path="contact" element={<ContactPage />} />
               <Route path="login" element={<LoginPage />} />
