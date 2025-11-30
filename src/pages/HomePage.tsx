@@ -8,10 +8,9 @@ const HomePage = () => {
   const { isAuthenticated } = useAuth()
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard')
-    }
-  }, [isAuthenticated, navigate])
+    // Redirect to welcome page for the engaging experience
+    navigate('/welcome')
+  }, [navigate])
 
   return (
     <div className="home-container">

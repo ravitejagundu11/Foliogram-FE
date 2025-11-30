@@ -72,3 +72,56 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient()
+
+// Portfolio API endpoints
+export const portfolioApi = {
+  getAll: () => apiClient.get('/portfolios'),
+  getById: (id: string) => apiClient.get(`/portfolios/${id}`),
+  create: (data: any) => apiClient.post('/portfolios', data),
+  update: (id: string, data: any) => apiClient.put(`/portfolios/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/portfolios/${id}`),
+}
+
+// Template API endpoints
+export const templateApi = {
+  getAll: () => apiClient.get('/templates'),
+  getById: (id: string) => apiClient.get(`/templates/${id}`),
+  getByCategory: (category: string) => apiClient.get(`/templates?category=${category}`),
+}
+
+// Upload API endpoints
+export const uploadApi = {
+  uploadImage: (file: FormData) => apiClient.post('/upload', file, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  uploadMultiple: (files: FormData) => apiClient.post('/upload/multiple', files, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+}
+
+// Project API endpoints
+export const projectApi = {
+  getAll: (portfolioId: string) => apiClient.get(`/portfolios/${portfolioId}/projects`),
+  getById: (portfolioId: string, projectId: string) => apiClient.get(`/portfolios/${portfolioId}/projects/${projectId}`),
+  create: (portfolioId: string, data: any) => apiClient.post(`/portfolios/${portfolioId}/projects`, data),
+  update: (portfolioId: string, projectId: string, data: any) => apiClient.put(`/portfolios/${portfolioId}/projects/${projectId}`, data),
+  delete: (portfolioId: string, projectId: string) => apiClient.delete(`/portfolios/${portfolioId}/projects/${projectId}`),
+}
+
+// Skill API endpoints
+export const skillApi = {
+  getAll: (portfolioId: string) => apiClient.get(`/portfolios/${portfolioId}/skills`),
+  getById: (portfolioId: string, skillId: string) => apiClient.get(`/portfolios/${portfolioId}/skills/${skillId}`),
+  create: (portfolioId: string, data: any) => apiClient.post(`/portfolios/${portfolioId}/skills`, data),
+  update: (portfolioId: string, skillId: string, data: any) => apiClient.put(`/portfolios/${portfolioId}/skills/${skillId}`, data),
+  delete: (portfolioId: string, skillId: string) => apiClient.delete(`/portfolios/${portfolioId}/skills/${skillId}`),
+}
+
+// Testimonial API endpoints
+export const testimonialApi = {
+  getAll: (portfolioId: string) => apiClient.get(`/portfolios/${portfolioId}/testimonials`),
+  getById: (portfolioId: string, testimonialId: string) => apiClient.get(`/portfolios/${portfolioId}/testimonials/${testimonialId}`),
+  create: (portfolioId: string, data: any) => apiClient.post(`/portfolios/${portfolioId}/testimonials`, data),
+  update: (portfolioId: string, testimonialId: string, data: any) => apiClient.put(`/portfolios/${portfolioId}/testimonials/${testimonialId}`, data),
+  delete: (portfolioId: string, testimonialId: string) => apiClient.delete(`/portfolios/${portfolioId}/testimonials/${testimonialId}`),
+}

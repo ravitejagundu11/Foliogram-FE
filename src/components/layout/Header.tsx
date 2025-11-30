@@ -51,75 +51,88 @@ const Header = () => {
     <header className="bg-white shadow-sm border-b">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
-            <h1 className="text-2xl font-extrabold text-gray-900">Foliogram</h1>
-          </Link>
-          <div className="flex items-center space-x-4">
-            {/* Public Navigation Links */}
-            {!isAuthenticated && (
-              <Link to="/" className={getLinkClassName('/')}>
-                Home
+          {/* Left side: Logo + Navigation Links */}
+          <div className="flex items-center space-x-6">
+            <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
+              <h1 className="text-2xl font-extrabold text-gray-900">Foliogram</h1>
+            </Link>
+
+            {/* Navigation Links */}
+            <div className="flex items-center space-x-4">
+              {/* Public Navigation Links */}
+              {!isAuthenticated && (
+                <Link to="/" className={getLinkClassName('/')}>
+                  Home
+                </Link>
+              )}
+              <Link to="/about" className={getLinkClassName('/about')}>
+                About
               </Link>
-            )}
-            <Link to="/about" className={getLinkClassName('/about')}>
-              About
-            </Link>
-            <Link to="/contact" className={getLinkClassName('/contact')}>
-              Contact
-            </Link>
+              <Link to="/contact" className={getLinkClassName('/contact')}>
+                Contact
+              </Link>
 
-            {/* Authenticated Navigation Links */}
-            {isAuthenticated && (
-              <>
-                <Link to="/dashboard" className={getLinkClassName('/dashboard')}>
-                  Dashboard
-                </Link>
-                <Link to="/blog" className={getLinkClassName('/blog')}>
-                  Blog
-                </Link>
-                <Link to="/users/search" className={getLinkClassName('/users/search')}>
-                  Users
-                </Link>
-                <Link to="/analytics" className={getLinkClassName('/analytics')}>
-                  Analytics
-                </Link>
-              </>
-            )}
+              {/* Authenticated Navigation Links */}
+              {isAuthenticated && (
+                <>
+                  <Link to="/dashboard" className={getLinkClassName('/dashboard')}>
+                    Dashboard
+                  </Link>
+                  <Link to="/blog" className={getLinkClassName('/blog')}>
+                    Blog
+                  </Link>
+                  <Link to="/users/search" className={getLinkClassName('/users/search')}>
+                    Users
+                  </Link>
+                  <Link to="/analytics" className={getLinkClassName('/analytics')}>
+                    Analytics
+                  </Link>
+                  <Link to="/appointment-management" className={getLinkClassName('/appointment-managemnet')}>
+                    Appointment Management
+                  </Link>
+                  <Link to="/booking-page" className={getLinkClassName('/booking-page')}>
+                    Book Appointment
+                  </Link>
 
-            {/* User Actions */}
+                  {/* Admin Dropdown */}
+                  {isAdmin && (
+                    <div className="relative" ref={adminMenuRef}>
+                      <button
+                        onClick={() => setAdminOpen((s) => !s)}
+                        className="flex items-center gap-1 text-gray-600 hover:text-gray-900 px-3 py-1 rounded-md transition-colors"
+                        aria-expanded={adminOpen}
+                        aria-haspopup="true"
+                      >
+                        <span className="text-sm font-medium">Administrator</span>
+                        <svg className={`w-4 h-4 transition-transform ${adminOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+
+                      {adminOpen && (
+                        <div className="origin-top-right absolute right-0 mt-2 w-52 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                          <div className="py-1">
+                            <Link
+                              to="/admin/user-management"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() => setAdminOpen(false)}
+                            >
+                              User Management
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Right side: Notification Bell + Profile Icon Only */}
+          <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                {/* Admin Dropdown */}
-                {isAdmin && (
-                  <div className="relative" ref={adminMenuRef}>
-                    <button
-                      onClick={() => setAdminOpen((s) => !s)}
-                      className="flex items-center gap-1 text-gray-600 hover:text-gray-900 px-3 py-1 rounded-md transition-colors"
-                      aria-expanded={adminOpen}
-                      aria-haspopup="true"
-                    >
-                      <span className="text-sm font-medium">Administrator</span>
-                      <svg className={`w-4 h-4 transition-transform ${adminOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-
-                    {adminOpen && (
-                      <div className="origin-top-right absolute right-0 mt-2 w-52 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                        <div className="py-1">
-                          <Link
-                            to="/admin/user-management"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setAdminOpen(false)}
-                          >
-                            User Management
-                          </Link>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Notification Bell */}
                 <div className="relative" ref={notificationRef}>
                   <button

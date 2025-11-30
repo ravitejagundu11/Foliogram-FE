@@ -1,371 +1,193 @@
-import { useBlog } from '@contexts/BlogContext'
-import { useAuth } from '@contexts/AuthContext'
-import { useSubscription } from '@contexts/SubscriptionContext'
-import { useUserManagement } from '@contexts/UserManagementContext'
-import '../styles/AnalyticsPage.css'
+"use client";
 
-const AnalyticsPage = () => {
-  const { posts } = useBlog()
-  const { user } = useAuth()
-  const { getSubscribers, getSubscribedUsers } = useSubscription()
-  const { users } = useUserManagement()
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "../components/ui/card";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from "recharts";
 
-  if (!user) return null
+export default function AnalyticsPage() {
+  const [data, setData] = useState<any>(null);
 
-  // My posts
-  const myPosts = posts.filter((p) => p.author === user.username)
-  
-  // Total engagement on my posts
-  const totalLikes = myPosts.reduce((sum, p) => sum + p.likes.length, 0)
-  const totalComments = myPosts.reduce((sum, p) => sum + p.comments.length, 0)
-  const totalShares = myPosts.reduce((sum, p) => sum + p.shares, 0)
-  
-  // Engagement I've given
-  const myLikes = posts.filter((p) => p.likes.includes(user.username)).length
-  const myComments = posts.reduce((sum, p) => {
-    const myPostComments = p.comments.filter((c) => c.author === user.username).length
-    const myReplies = p.comments.reduce((rSum, c) => 
-      rSum + c.replies.filter((r) => r.author === user.username).length, 0
-    )
-    return sum + myPostComments + myReplies
-  }, 0)
+  // -----------------------------
+  // MOCK DATA (FALLBACK)
+  // -----------------------------
+  const mockData = {
+    views: 1240,
+    sessions: 678,
+    resumeViews: 310,
+    salaryExpectations: "₹12 LPA",
+    viewsOverTime: [
+      { date: "Mon", views: 120 },
+      { date: "Tue", views: 180 },
+      { date: "Wed", views: 140 },
+      { date: "Thu", views: 260 },
+      { date: "Fri", views: 200 },
+      { date: "Sat", views: 300 },
+      { date: "Sun", views: 240 },
+    ],
+    viewerCompanies: [
+      { name: "Google", value: 4 },
+      { name: "Amazon", value: 3 },
+      { name: "Infosys", value: 6 },
+      { name: "TCS", value: 2 },
+    ],
+    whoViewed: [
+      { ip: "192.168.0.12", company: "Google" },
+      { ip: "192.168.0.19", company: "Infosys" },
+      { ip: "10.0.0.5", company: "Amazon" },
+    ],
+  };
 
-  // Subscriptions
-  const subscribers = getSubscribers(user.username)
-  const subscribedTo = getSubscribedUsers()
+  useEffect(() => {
+    async function loadAnalytics() {
+      try {
+        // ---------------------------------------------------------
+        // BACKEND FETCH CODE (Commented out as requested)
+        // ---------------------------------------------------------
+        /*
+        const res = await fetch(`/api/analytics/123`);
 
-  // Most liked post
-  const mostLikedPost = myPosts.length > 0
-    ? myPosts.reduce((max, p) => (p.likes.length > max.likes.length ? p : max), myPosts[0])
-    : null
+        if (!res.ok) throw new Error("Failed to fetch");
 
-  // Most commented post
-  const mostCommentedPost = myPosts.length > 0
-    ? myPosts.reduce((max, p) => (p.comments.length > max.comments.length ? p : max), myPosts[0])
-    : null
+        const json = await res.json();
+        setData({
+          views: json.totalViews,
+          sessions: json.sessions,
+          resumeViews: json.resumeViews,
+          salaryExpectations: `₹${json.salaryExpectationAvg}`,
+          viewsOverTime: json.viewsOverTime,
+          viewerCompanies: json.connections.map((c: any) => ({
+            name: c.type,
+            value: c.value,
+          })),
+          whoViewed: json.viewers.map((v: any) => ({
+            ip: v.ip,
+            company: v.company,
+            time: v.time,
+          })),
+        });
+        return;
+        */
+        // ---------------------------------------------------------
 
-  // Activity over time (last 7 days)
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (6 - i))
-    date.setHours(0, 0, 0, 0)
-    return date.getTime()
-  })
-
-  const activityByDay = last7Days.map((dayStart) => {
-    const dayEnd = dayStart + 24 * 60 * 60 * 1000
-    const postsCount = myPosts.filter((p) => p.timestamp >= dayStart && p.timestamp < dayEnd).length
-    return postsCount
-  })
-
-  const maxActivity = Math.max(...activityByDay, 1)
-
-  // Top contributors (users who engaged with my posts)
-  const engagementMap: { [key: string]: number } = {}
-  myPosts.forEach((post) => {
-    post.likes.forEach((username) => {
-      engagementMap[username] = (engagementMap[username] || 0) + 1
-    })
-    post.comments.forEach((comment) => {
-      engagementMap[comment.author] = (engagementMap[comment.author] || 0) + 2
-      comment.replies.forEach((reply) => {
-        engagementMap[reply.author] = (engagementMap[reply.author] || 0) + 1
-      })
-    })
-  })
-  
-  const topContributors = Object.entries(engagementMap)
-    .filter(([username]) => username !== user.username)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([username, score]) => {
-      const u = users.find((u) => u.username === username)
-      return {
-        username,
-        name: u ? `${u.firstName} ${u.lastName}` : username,
-        score,
+        // If backend fails → use mock data
+        console.warn("Backend disabled. Using mock data.");
+        setData(mockData);
+      } catch (err) {
+        console.warn("Backend unavailable → Using mock data.");
+        setData(mockData);
       }
-    })
+    }
 
-  // Post performance
-  const postPerformance = myPosts.map((post) => ({
-    id: post.id,
-    title: post.title,
-    likes: post.likes.length,
-    comments: post.comments.length,
-    shares: post.shares,
-    totalEngagement: post.likes.length + post.comments.length + post.shares,
-  })).sort((a, b) => b.totalEngagement - a.totalEngagement).slice(0, 5)
+    loadAnalytics();
+  }, []);
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
-
-  const avgLikesPerPost = myPosts.length > 0 ? (totalLikes / myPosts.length).toFixed(1) : '0'
-  const avgCommentsPerPost = myPosts.length > 0 ? (totalComments / myPosts.length).toFixed(1) : '0'
+  if (!data) return <p className="text-center mt-10">Loading analytics...</p>;
 
   return (
-    <div className="analytics-container">
-      <div className="analytics-header">
-        <h1 className="analytics-title">Analytics Dashboard</h1>
-        <p className="analytics-subtitle">Track your blog performance and engagement</p>
+    <div className="p-6 space-y-8 w-full max-w-6xl mx-auto">
+
+      <h1 className="text-3xl font-bold tracking-tight">Analytics Overview</h1>
+      <p className="text-gray-500">Track how your portfolio performs across the internet.</p>
+
+      {/* METRIC CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        {[{
+          label: "Total Views",
+          value: data.views,
+        },{
+          label: "Total Sessions",
+          value: data.sessions,
+        },{
+          label: "Resume Views",
+          value: data.resumeViews,
+        },{
+          label: "Salary Expectation",
+          value: data.salaryExpectations,
+        }].map((item, idx) => (
+          <Card key={idx} className="shadow-md rounded-xl border border-gray-200 hover:shadow-lg transition">
+            <CardContent className="p-5">
+              <h2 className="text-2xl font-semibold">{item.value}</h2>
+              <p className="text-gray-500 text-sm">{item.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Overview Stats */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon">📝</div>
-          <div className="stat-content">
-            <h3 className="stat-value">{myPosts.length}</h3>
-            <p className="stat-label">Total Posts</p>
+      {/* LINE CHART */}
+      <Card className="shadow-md rounded-xl border border-gray-200">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Views Over Time</h2>
+          <div className="w-full h-72">
+            <ResponsiveContainer>
+              <LineChart data={data.viewsOverTime}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="views" stroke="#6366F1" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="stat-card">
-          <div className="stat-icon">❤️</div>
-          <div className="stat-content">
-            <h3 className="stat-value">{totalLikes}</h3>
-            <p className="stat-label">Likes Received</p>
-            <p className="stat-detail">Avg: {avgLikesPerPost}/post</p>
+      {/* PIE CHART */}
+      <Card className="shadow-md rounded-xl border border-gray-200">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Viewer Companies</h2>
+          <div className="w-full flex justify-center h-72">
+            <ResponsiveContainer width="80%">
+              <PieChart>
+                <Pie
+                  data={data.viewerCompanies}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={120}
+                  label
+                >
+                  {data.viewerCompanies.map((_: any, index: number) => (
+                    <Cell
+                      key={index}
+                      fill={["#6366F1", "#10B981", "#F59E0B", "#EF4444"][index % 4]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="stat-card">
-          <div className="stat-icon">💬</div>
-          <div className="stat-content">
-            <h3 className="stat-value">{totalComments}</h3>
-            <p className="stat-label">Comments Received</p>
-            <p className="stat-detail">Avg: {avgCommentsPerPost}/post</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">🔗</div>
-          <div className="stat-content">
-            <h3 className="stat-value">{totalShares}</h3>
-            <p className="stat-label">Shares</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">👥</div>
-          <div className="stat-content">
-            <h3 className="stat-value">{subscribers.length}</h3>
-            <p className="stat-label">Subscribers</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">👤</div>
-          <div className="stat-content">
-            <h3 className="stat-value">{subscribedTo.length}</h3>
-            <p className="stat-label">Subscribed To</p>
-          </div>
-        </div>
-      </div>
-
-      {/* My Activity */}
-      <div className="section-grid">
-        <div className="analytics-section">
-          <h2 className="section-title">My Activity</h2>
-          <div className="activity-stats">
-            <div className="activity-item">
-              <span className="activity-label">Likes Given</span>
-              <span className="activity-value">{myLikes}</span>
-            </div>
-            <div className="activity-item">
-              <span className="activity-label">Comments Written</span>
-              <span className="activity-value">{myComments}</span>
-            </div>
-            <div className="activity-item">
-              <span className="activity-label">Posts Created</span>
-              <span className="activity-value">{myPosts.length}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Posts */}
-        <div className="analytics-section">
-          <h2 className="section-title">Top Posts</h2>
-          <div className="top-posts-list">
-            {mostLikedPost && (
-              <div className="top-post-item">
-                <span className="top-post-label">Most Liked</span>
-                <p className="top-post-title">{mostLikedPost.title}</p>
-                <span className="top-post-stat">❤️ {mostLikedPost.likes.length} likes</span>
-              </div>
-            )}
-            {mostCommentedPost && (
-              <div className="top-post-item">
-                <span className="top-post-label">Most Discussed</span>
-                <p className="top-post-title">{mostCommentedPost.title}</p>
-                <span className="top-post-stat">💬 {mostCommentedPost.comments.length} comments</span>
-              </div>
-            )}
-            {!mostLikedPost && <p className="no-data">No posts yet</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Activity Chart */}
-      <div className="analytics-section full-width">
-        <h2 className="section-title">Post Activity (Last 7 Days)</h2>
-        <div className="chart-container">
-          <div className="bar-chart">
-            {activityByDay.map((count, index) => (
-              <div key={index} className="bar-wrapper">
-                <div className="bar-label">{count}</div>
-                <div className="bar-column">
-                  <div
-                    className="bar"
-                    style={{ height: `${(count / maxActivity) * 100}%` }}
-                  />
-                </div>
-                <div className="bar-date">{formatDate(last7Days[index])}</div>
+      {/* VIEWER LIST */}
+      <Card className="shadow-md rounded-xl border border-gray-200">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Who Viewed Your Profile</h2>
+          <div className="space-y-3">
+            {data.whoViewed.map((v: any, i: number) => (
+              <div
+                key={i}
+                className="border p-4 rounded-xl flex justify-between items-center bg-gray-50 hover:bg-white transition shadow-sm"
+              >
+                <span className="font-medium">{v.company}</span>
+                <span className="text-gray-500 text-sm">{v.ip}</span>
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Post Performance Table */}
-      {postPerformance.length > 0 && (
-        <div className="analytics-section full-width">
-          <h2 className="section-title">Post Performance</h2>
-          <div className="table-container">
-            <table className="performance-table">
-              <thead>
-                <tr>
-                  <th>Post Title</th>
-                  <th>❤️ Likes</th>
-                  <th>💬 Comments</th>
-                  <th>🔗 Shares</th>
-                  <th>Total Engagement</th>
-                </tr>
-              </thead>
-              <tbody>
-                {postPerformance.map((post) => (
-                  <tr key={post.id}>
-                    <td className="post-title-cell">{post.title}</td>
-                    <td>{post.likes}</td>
-                    <td>{post.comments}</td>
-                    <td>{post.shares}</td>
-                    <td className="engagement-cell">{post.totalEngagement}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Top Contributors */}
-      {topContributors.length > 0 && (
-        <div className="analytics-section full-width">
-          <h2 className="section-title">Top Contributors</h2>
-          <p className="section-subtitle">Users who engage most with your posts</p>
-          <div className="contributors-list">
-            {topContributors.map(({ username, name, score }, index) => (
-              <div key={username} className="contributor-item">
-                <div className="contributor-rank">#{index + 1}</div>
-                <div className="contributor-info">
-                  <p className="contributor-name">{name}</p>
-                  <p className="contributor-username">@{username}</p>
-                </div>
-                <div className="contributor-score">
-                  <span className="score-value">{score}</span>
-                  <span className="score-label">engagement</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Subscribers & Following */}
-      <div className="section-grid">
-        <div className="analytics-section">
-          <h2 className="section-title">My Subscribers ({subscribers.length})</h2>
-          {subscribers.length > 0 ? (
-            <div className="user-list">
-              {subscribers.map((username) => {
-                const u = users.find((u) => u.username === username)
-                return (
-                  <div key={username} className="user-item">
-                    {u?.profileImage ? (
-                      <img src={u.profileImage} alt={username} className="user-avatar-small" />
-                    ) : (
-                      <div className="user-avatar-small-placeholder">
-                        {u?.firstName?.charAt(0)}{u?.lastName?.charAt(0)}
-                      </div>
-                    )}
-                    <div className="user-item-info">
-                      <p className="user-item-name">{u ? `${u.firstName} ${u.lastName}` : username}</p>
-                      <p className="user-item-username">@{username}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="no-data">No subscribers yet</p>
-          )}
-        </div>
-
-        <div className="analytics-section">
-          <h2 className="section-title">Following ({subscribedTo.length})</h2>
-          {subscribedTo.length > 0 ? (
-            <div className="user-list">
-              {subscribedTo.map((username) => {
-                const u = users.find((u) => u.username === username)
-                return (
-                  <div key={username} className="user-item">
-                    {u?.profileImage ? (
-                      <img src={u.profileImage} alt={username} className="user-avatar-small" />
-                    ) : (
-                      <div className="user-avatar-small-placeholder">
-                        {u?.firstName?.charAt(0)}{u?.lastName?.charAt(0)}
-                      </div>
-                    )}
-                    <div className="user-item-info">
-                      <p className="user-item-name">{u ? `${u.firstName} ${u.lastName}` : username}</p>
-                      <p className="user-item-username">@{username}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="no-data">Not following anyone yet</p>
-          )}
-        </div>
-      </div>
-
-      {/* Engagement Breakdown */}
-      <div className="analytics-section full-width">
-        <h2 className="section-title">Engagement Breakdown</h2>
-        <div className="engagement-chart">
-          <div className="engagement-bar-container">
-            <div className="engagement-bar-wrapper">
-              <div className="engagement-bar likes-bar" style={{ width: `${totalLikes > 0 ? (totalLikes / (totalLikes + totalComments + totalShares)) * 100 : 0}%` }}>
-                <span className="engagement-bar-label">Likes: {totalLikes}</span>
-              </div>
-            </div>
-            <div className="engagement-bar-wrapper">
-              <div className="engagement-bar comments-bar" style={{ width: `${totalComments > 0 ? (totalComments / (totalLikes + totalComments + totalShares)) * 100 : 0}%` }}>
-                <span className="engagement-bar-label">Comments: {totalComments}</span>
-              </div>
-            </div>
-            <div className="engagement-bar-wrapper">
-              <div className="engagement-bar shares-bar" style={{ width: `${totalShares > 0 ? (totalShares / (totalLikes + totalComments + totalShares)) * 100 : 0}%` }}>
-                <span className="engagement-bar-label">Shares: {totalShares}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  )
+  );
 }
-
-export default AnalyticsPage
