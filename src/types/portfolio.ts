@@ -59,6 +59,8 @@ export interface Portfolio extends PortfolioConfig {
   contactEmail?: string
   slug: string
   isPublished: boolean
+  publishedAt?: string
+  unpublishedAt?: string
   views: number
   likes: number
   createdAt: string
