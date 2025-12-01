@@ -116,14 +116,22 @@ const TestimonialsList = ({ testimonials, portfolioId, onAdd, onUpdate, onDelete
 
   return (
     <div className="testimonials-list-container">
-      {/* Add Button */}
-      <button
-        className="add-testimonial-button"
-        onClick={() => handleOpenModal()}
-      >
-        <Plus size={20} />
-        Add New Testimonial
-      </button>
+      {/* Header with Add Button */}
+      <div className="section-header-actions">
+        <div>
+          <h2 className="section-title">Manage Testimonials</h2>
+          <p className="section-description">
+            Add testimonials from clients and colleagues
+          </p>
+        </div>
+        <button
+          className="add-button"
+          onClick={() => handleOpenModal()}
+        >
+          <Plus size={18} />
+          Add Testimonial
+        </button>
+      </div>
 
       {/* Testimonials Grid */}
       <div className="testimonials-grid">

@@ -95,9 +95,6 @@ const ProjectForm = ({ project, portfolioId, onSave, onClose }: ProjectFormProps
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required'
     }
-    if (formData.techStack.length === 0) {
-      newErrors.techStack = 'Add at least one technology'
-    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -110,8 +107,6 @@ const ProjectForm = ({ project, portfolioId, onSave, onClose }: ProjectFormProps
 
     setSaving(true)
     try {
-      // In a real app, upload images first and get URLs
-      // For now, we'll use the previews
       const projectData = {
         ...formData,
         portfolioId,

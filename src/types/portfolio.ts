@@ -13,6 +13,7 @@ export interface Template {
 export interface PortfolioConfig {
   id?: string
   templateId: string
+  name?: string
   headline: string
   description: string
   profilePicture?: string
@@ -34,12 +35,14 @@ export interface PortfolioConfig {
     cardStyle: 'rounded' | 'sharp' | 'minimal'
   }
   sections: {
-    about: boolean
-    experience: boolean
     education: boolean
+    experience: boolean
     projects: boolean
+    publications: boolean
     skills: boolean
+    testimonials: boolean
     contact: boolean
+    [key: string]: boolean // Allow dynamic sections
   }
   socialLinks: {
     github?: string

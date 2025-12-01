@@ -7,6 +7,8 @@ import '../styles/SkillsList.css'
 interface SkillsListProps {
   skills: Skill[]
   portfolioId: string
+  showForm?: boolean
+  onToggleForm?: (show: boolean) => void
   onAdd: (skill: Omit<Skill, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>
   onUpdate: (id: string, skill: Partial<Skill>) => Promise<void>
   onDelete: (id: string) => Promise<void>
@@ -14,8 +16,8 @@ interface SkillsListProps {
 
 const CATEGORIES = ['Frontend', 'Backend', 'Database', 'DevOps', 'Tools', 'Other'] as const
 
-const SkillsList = ({ skills, portfolioId, onAdd, onUpdate, onDelete }: SkillsListProps) => {
-  const [showAddForm, setShowAddForm] = useState(false)
+const SkillsList = ({ skills, portfolioId, showForm = false, onToggleForm, onAdd, onUpdate, onDelete }: SkillsListProps) => {
+  const [showAddForm, setShowAddForm] = useState(showForm)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<{
     name: string
@@ -102,6 +104,25 @@ const SkillsList = ({ skills, portfolioId, onAdd, onUpdate, onDelete }: SkillsLi
 
   return (
     <div className="skills-list-container">
+      {/* Header with Add Button */}
+      <div className="section-header-actions">
+        <div>
+          <h2 className="section-title">Manage Skills</h2>
+          <p className="section-description">
+            Add your technical and professional skills
+          </p>
+        </div>
+        {!showAddForm && !editingId && (
+          <button
+            className="add-button"
+            onClick={() => setShowAddForm(true)}
+          >
+            <Plus size={18} />
+            Add Skill
+          </button>
+        )}
+      </div>
+
       {/* Add/Edit Form */}
       <AnimatePresence>
         {(showAddForm || editingId) && (
@@ -171,17 +192,6 @@ const SkillsList = ({ skills, portfolioId, onAdd, onUpdate, onDelete }: SkillsLi
         )}
       </AnimatePresence>
 
-      {/* Add Button */}
-      {!showAddForm && !editingId && (
-        <button
-          className="add-skill-button"
-          onClick={() => setShowAddForm(true)}
-        >
-          <Plus size={20} />
-          Add New Skill
-        </button>
-      )}
-
       {/* Skills by Category */}
       <div className="skills-categories">
         {CATEGORIES.map((category) => {
@@ -197,13 +207,9 @@ const SkillsList = ({ skills, portfolioId, onAdd, onUpdate, onDelete }: SkillsLi
 
               <div className="skills-grid">
                 {categorySkills.map((skill) => (
-                  <motion.div
+                  <div
                     key={skill.id}
                     className={`skill-chip ${editingId === skill.id ? 'editing' : ''}`}
-                    layout
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
                   >
                     <div className="skill-info">
                       <span className="skill-name">{skill.name}</span>
@@ -226,7 +232,7 @@ const SkillsList = ({ skills, portfolioId, onAdd, onUpdate, onDelete }: SkillsLi
                         <Trash2 size={14} />
                       </button>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
