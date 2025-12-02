@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../contexts/AuthContext'
 import { 
   ExternalLink, 
   Github, 
@@ -16,7 +17,12 @@ import {
   Link as LinkIcon,
   Send,
   MapPin,
-  Calendar
+  Calendar,
+  User,
+  Phone,
+  Video,
+  Bell,
+  BellOff
 } from 'lucide-react'
 import { apiClient } from '../services/api'
 import type { Portfolio, Project, Skill, Testimonial } from '../types/portfolio'
@@ -32,6 +38,7 @@ interface ContactFormData {
 const PortfolioPublic = () => {
   const { username, portfolioId } = useParams<{ username?: string; portfolioId?: string }>()
   const navigate = useNavigate()
+  const { user: currentUser } = useAuth()
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [skills, setSkills] = useState<Skill[]>([])
@@ -54,235 +61,117 @@ const PortfolioPublic = () => {
   })
   const [sendingContact, setSendingContact] = useState(false)
   const [contactSuccess, setContactSuccess] = useState(false)
+  
+  // Subscription State
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [subscribing, setSubscribing] = useState(false)
 
   useEffect(() => {
     const fetchPortfolioData = async () => {
+      // portfolioId from URL params could actually be a slug, not an ID
       const identifier = username || portfolioId
-      if (!identifier) return
+      if (!identifier) {
+        console.error('No identifier provided')
+        return
+      }
 
       try {
         setLoading(true)
         
-        // Mock data for demonstration (remove when backend is ready)
-        const mockPortfolio: Portfolio = {
-          id: '1',
-          userId: 'user1',
-          name: 'Sarah Johnson',
-          contactEmail: 'sarah.johnson@example.com',
-          slug: 'sarahjohnson',
-          templateId: 'modern-minimal',
-          headline: 'Full-Stack Developer & UI/UX Enthusiast',
-          description: 'Passionate about creating beautiful, functional, and user-centered digital experiences. With 5+ years of experience in web development, I specialize in React, Node.js, and modern web technologies.',
-          profilePicture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-          theme: {
-            primaryColor: '#667eea',
-            secondaryColor: '#764ba2',
-            accentColor: '#10b981',
-            backgroundColor: '#ffffff',
-            textColor: '#1f2937'
-          },
-          typography: {
-            headingFont: 'Inter',
-            bodyFont: 'Inter',
-            fontSize: 'medium'
-          },
-          layout: {
-            headerStyle: 'centered',
-            spacing: 'comfortable',
-            cardStyle: 'rounded'
-          },
-          sections: {
-            about: true,
-            experience: true,
-            education: true,
-            projects: true,
-            skills: true,
-            contact: true
-          },
-          socialLinks: {
-            github: 'https://github.com/sarahjohnson',
-            linkedin: 'https://linkedin.com/in/sarahjohnson',
-            twitter: 'https://twitter.com/sarahjohnson',
-            website: 'https://sarahjohnson.dev'
-          },
-          isPublished: true,
-          views: 1250,
-          likes: 89,
-          createdAt: '2024-01-15T10:00:00Z',
-          updatedAt: '2024-11-20T15:30:00Z'
+        let portfolioData: Portfolio | null = null
+        let projectsData: Project[] = []
+        let skillsData: Skill[] = []
+        let testimonialsData: Testimonial[] = []
+
+        console.log('Fetching portfolio with identifier:', identifier)
+        console.log('URL params - portfolioId:', portfolioId, 'username:', username)
+
+        // Try fetching from API first
+        try {
+          const endpoint = username 
+            ? `/portfolios/public/${username}` 
+            : `/portfolios/${identifier}/public`
+          
+          console.log('Trying API endpoint:', endpoint)
+          
+          const response = await apiClient.get<{
+            portfolio: Portfolio
+            projects: Project[]
+            skills: Skill[]
+            testimonials: Testimonial[]
+          }>(endpoint)
+
+          portfolioData = response.portfolio
+          projectsData = response.projects
+          skillsData = response.skills
+          testimonialsData = response.testimonials
+          
+          console.log('Successfully loaded from API')
+        } catch (apiError) {
+          console.warn('Backend API not available, fetching from localStorage:', apiError)
+          
+          // Fallback to localStorage
+          const localPortfolios = JSON.parse(localStorage.getItem('portfolios') || '{}')
+          const allPortfolios = Object.values(localPortfolios) as Portfolio[]
+          
+          console.log('Total portfolios in localStorage:', allPortfolios.length)
+          console.log('Available portfolio IDs:', Object.keys(localPortfolios))
+          console.log('Available portfolio slugs:', allPortfolios.map(p => p.slug))
+          
+          // Search through all portfolios - identifier could be slug, ID, or username
+          portfolioData = allPortfolios.find((p: Portfolio) => {
+            // Check multiple possibilities
+            const matches = 
+              p.id === identifier ||                    // Direct ID match
+              p.slug === identifier ||                  // Slug match
+              localPortfolios[identifier]?.id === p.id  // ID used as key in localStorage
+            
+            if (matches) {
+              console.log('✓ Found portfolio:', p.name, '| ID:', p.id, '| Slug:', p.slug)
+            }
+            
+            return matches
+          }) || null
+          
+          // If still not found, try direct localStorage access
+          if (!portfolioData && localPortfolios[identifier]) {
+            console.log('Found by direct localStorage key access')
+            portfolioData = localPortfolios[identifier]
+          }
+
+          if (!portfolioData) {
+            console.error('❌ Portfolio not found!')
+            console.error('Searched for identifier:', identifier)
+            console.error('Available portfolios:', allPortfolios.map(p => ({
+              id: p.id,
+              name: p.name,
+              slug: p.slug
+            })))
+            throw new Error('Portfolio not found')
+          }
+
+          console.log('✓ Successfully loaded portfolio from localStorage:', portfolioData.name)
+
+          // Extract embedded data from portfolio
+          projectsData = portfolioData.projects || []
+          skillsData = portfolioData.skills || []
+          testimonialsData = portfolioData.testimonials || []
+          
+          console.log('Loaded data - Projects:', projectsData.length, 'Skills:', skillsData.length, 'Testimonials:', testimonialsData.length)
         }
 
-        const mockProjects: Project[] = [
-          {
-            id: '1',
-            portfolioId: '1',
-            title: 'E-Commerce Platform',
-            description: 'A full-featured e-commerce platform built with React, Node.js, and MongoDB. Includes user authentication, product management, shopping cart, payment integration with Stripe, and an admin dashboard for managing orders and inventory.',
-            images: [
-              'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=500&fit=crop',
-              'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=500&fit=crop',
-              'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=500&fit=crop'
-            ],
-            techStack: ['React', 'Node.js', 'MongoDB', 'Express', 'Stripe', 'Redux', 'Tailwind CSS'],
-            demoUrl: 'https://ecommerce-demo.example.com',
-            codeUrl: 'https://github.com/sarahjohnson/ecommerce-platform',
-            featured: true,
-            order: 0,
-            createdAt: '2024-03-10T10:00:00Z',
-            updatedAt: '2024-11-15T12:00:00Z'
-          },
-          {
-            id: '2',
-            portfolioId: '1',
-            title: 'Task Management App',
-            description: 'A collaborative task management application with real-time updates using Socket.io. Features include drag-and-drop kanban boards, team collaboration, file attachments, and deadline tracking.',
-            images: [
-              'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=500&fit=crop',
-              'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&h=500&fit=crop'
-            ],
-            techStack: ['React', 'TypeScript', 'Socket.io', 'PostgreSQL', 'Material-UI'],
-            demoUrl: 'https://taskmanager-demo.example.com',
-            codeUrl: 'https://github.com/sarahjohnson/task-manager',
-            featured: true,
-            order: 1,
-            createdAt: '2024-05-20T10:00:00Z',
-            updatedAt: '2024-10-22T14:30:00Z'
-          },
-          {
-            id: '3',
-            portfolioId: '1',
-            title: 'Weather Dashboard',
-            description: 'A beautiful weather dashboard that displays current weather, 7-day forecast, and weather maps. Integrates with OpenWeather API and uses geolocation for automatic location detection.',
-            images: [
-              'https://images.unsplash.com/photo-1592210454359-9043f067919b?w=800&h=500&fit=crop'
-            ],
-            techStack: ['React', 'Next.js', 'OpenWeather API', 'Chart.js', 'CSS Modules'],
-            demoUrl: 'https://weather-dashboard.example.com',
-            codeUrl: 'https://github.com/sarahjohnson/weather-dashboard',
-            featured: false,
-            order: 2,
-            createdAt: '2024-07-08T10:00:00Z',
-            updatedAt: '2024-09-15T11:20:00Z'
-          },
-          {
-            id: '4',
-            portfolioId: '1',
-            title: 'Blog CMS',
-            description: 'A modern content management system for bloggers with markdown support, SEO optimization, and analytics. Built with a headless architecture for flexibility.',
-            images: [
-              'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=500&fit=crop'
-            ],
-            techStack: ['Next.js', 'GraphQL', 'Prisma', 'PostgreSQL', 'AWS S3'],
-            demoUrl: 'https://blog-cms-demo.example.com',
-            codeUrl: 'https://github.com/sarahjohnson/blog-cms',
-            featured: false,
-            order: 3,
-            createdAt: '2024-08-12T10:00:00Z',
-            updatedAt: '2024-11-01T16:45:00Z'
-          }
-        ]
+        // Check if portfolio is published
+        if (!portfolioData || !portfolioData.isPublished) {
+          setError('This portfolio is not published or does not exist.')
+          setLoading(false)
+          return
+        }
 
-        const mockSkills: Skill[] = [
-          // Frontend
-          { id: '1', portfolioId: '1', name: 'React', category: 'Frontend', proficiency: 5, order: 0 },
-          { id: '2', portfolioId: '1', name: 'Next.js', category: 'Frontend', proficiency: 4, order: 1 },
-          { id: '3', portfolioId: '1', name: 'TypeScript', category: 'Frontend', proficiency: 5, order: 2 },
-          { id: '4', portfolioId: '1', name: 'Vue.js', category: 'Frontend', proficiency: 3, order: 3 },
-          { id: '5', portfolioId: '1', name: 'Tailwind CSS', category: 'Frontend', proficiency: 5, order: 4 },
-          { id: '6', portfolioId: '1', name: 'Redux', category: 'Frontend', proficiency: 4, order: 5 },
-          
-          // Backend
-          { id: '7', portfolioId: '1', name: 'Node.js', category: 'Backend', proficiency: 5, order: 0 },
-          { id: '8', portfolioId: '1', name: 'Express', category: 'Backend', proficiency: 5, order: 1 },
-          { id: '9', portfolioId: '1', name: 'GraphQL', category: 'Backend', proficiency: 4, order: 2 },
-          { id: '10', portfolioId: '1', name: 'REST API', category: 'Backend', proficiency: 5, order: 3 },
-          { id: '11', portfolioId: '1', name: 'Python', category: 'Backend', proficiency: 3, order: 4 },
-          
-          // Database
-          { id: '12', portfolioId: '1', name: 'MongoDB', category: 'Database', proficiency: 4, order: 0 },
-          { id: '13', portfolioId: '1', name: 'PostgreSQL', category: 'Database', proficiency: 4, order: 1 },
-          { id: '14', portfolioId: '1', name: 'Redis', category: 'Database', proficiency: 3, order: 2 },
-          { id: '15', portfolioId: '1', name: 'Prisma', category: 'Database', proficiency: 4, order: 3 },
-          
-          // DevOps
-          { id: '16', portfolioId: '1', name: 'Docker', category: 'DevOps', proficiency: 4, order: 0 },
-          { id: '17', portfolioId: '1', name: 'AWS', category: 'DevOps', proficiency: 3, order: 1 },
-          { id: '18', portfolioId: '1', name: 'CI/CD', category: 'DevOps', proficiency: 4, order: 2 },
-          { id: '19', portfolioId: '1', name: 'Git', category: 'DevOps', proficiency: 5, order: 3 },
-          
-          // Tools
-          { id: '20', portfolioId: '1', name: 'Figma', category: 'Tools', proficiency: 4, order: 0 },
-          { id: '21', portfolioId: '1', name: 'VS Code', category: 'Tools', proficiency: 5, order: 1 },
-          { id: '22', portfolioId: '1', name: 'Postman', category: 'Tools', proficiency: 5, order: 2 },
-          { id: '23', portfolioId: '1', name: 'Jira', category: 'Tools', proficiency: 4, order: 3 }
-        ]
-
-        const mockTestimonials: Testimonial[] = [
-          {
-            id: '1',
-            portfolioId: '1',
-            name: 'Michael Chen',
-            role: 'Senior Product Manager',
-            company: 'TechCorp Inc.',
-            content: 'Sarah is an exceptional developer who consistently delivers high-quality work. Her attention to detail and ability to understand complex requirements makes her a valuable asset to any team. She led our e-commerce platform redesign and exceeded all expectations.',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
-            rating: 5,
-            order: 0,
-            createdAt: '2024-09-15T10:00:00Z'
-          },
-          {
-            id: '2',
-            portfolioId: '1',
-            name: 'Emily Rodriguez',
-            role: 'CEO',
-            company: 'StartupHub',
-            content: 'Working with Sarah was a game-changer for our company. She not only delivered a beautiful and functional product but also provided valuable insights that improved our overall user experience. Her technical expertise and communication skills are outstanding.',
-            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop',
-            rating: 5,
-            order: 1,
-            createdAt: '2024-10-02T14:30:00Z'
-          },
-          {
-            id: '3',
-            portfolioId: '1',
-            name: 'David Thompson',
-            role: 'Lead Developer',
-            company: 'Digital Solutions',
-            content: 'Sarah\'s code quality is exceptional. She writes clean, maintainable code and always follows best practices. Her problem-solving skills and ability to work under pressure make her an excellent team player. Highly recommended!',
-            avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop',
-            rating: 5,
-            order: 2,
-            createdAt: '2024-10-20T09:15:00Z'
-          }
-        ]
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        // Uncomment below when backend is ready
-        /*
-        const endpoint = username 
-          ? `/portfolios/public/${username}` 
-          : `/portfolios/${identifier}/public`
-        
-        const portfolioData = await apiClient.get<{
-          portfolio: Portfolio
-          projects: Project[]
-          skills: Skill[]
-          testimonials: Testimonial[]
-        }>(endpoint)
-
-        setPortfolio(portfolioData.portfolio)
-        setProjects(portfolioData.projects)
-        setSkills(portfolioData.skills)
-        setTestimonials(portfolioData.testimonials)
-        */
-
-        // Using mock data
-        setPortfolio(mockPortfolio)
-        setProjects(mockProjects)
-        setSkills(mockSkills)
-        setTestimonials(mockTestimonials)
+        // Set the data
+        setPortfolio(portfolioData)
+        setProjects(projectsData)
+        setSkills(skillsData)
+        setTestimonials(testimonialsData)
       } catch (err) {
         console.error('Error fetching portfolio:', err)
         setError('Failed to load portfolio. Please try again later.')
@@ -362,6 +251,73 @@ const PortfolioPublic = () => {
     }
   }
 
+  const handleScheduleAppointment = () => {
+    // Navigate to booking page with portfolio ID
+    navigate(`/booking/${portfolio?.id || portfolioId}`)
+  }
+
+  const handleSubscribe = async () => {
+    if (!portfolio) return
+    
+    // Prevent users from subscribing to their own portfolio
+    if (currentUser) {
+      const storedUser = localStorage.getItem('user')
+      const currentUserId = storedUser ? JSON.parse(storedUser).username : null
+      
+      // Check multiple possible matches
+      if (portfolio.userId === currentUser.username || 
+          portfolio.userId === currentUser.email || 
+          portfolio.userId === currentUserId ||
+          portfolio.name === currentUser.username) {
+        alert('❌ You cannot subscribe to your own portfolio!');
+        return;
+      }
+    }
+    
+    setSubscribing(true)
+    try {
+      // Check current subscription status
+      const currentStatus = isSubscribed
+      
+      if (currentStatus) {
+        // Unsubscribe
+        await apiClient.delete(`/subscriptions/${portfolio.id}`)
+        setIsSubscribed(false)
+        alert('✓ You have unsubscribed from updates!')
+      } else {
+        // Subscribe
+        await apiClient.post('/subscriptions', {
+          portfolioId: portfolio.id,
+          subscribedAt: new Date().toISOString()
+        })
+        setIsSubscribed(true)
+        alert('✓ You are now subscribed to updates!')
+      }
+    } catch (error: any) {
+      console.warn('Subscription API not available, using local storage:', error.message)
+      
+      // Fallback: Use localStorage
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '{}')
+      
+      if (isSubscribed) {
+        delete subscriptions[portfolio.id]
+        setIsSubscribed(false)
+        alert('✓ You have unsubscribed from updates!')
+      } else {
+        subscriptions[portfolio.id] = {
+          portfolioId: portfolio.id,
+          subscribedAt: new Date().toISOString()
+        }
+        setIsSubscribed(true)
+        alert('✓ You are now subscribed to updates!')
+      }
+      
+      localStorage.setItem('subscriptions', JSON.stringify(subscriptions))
+    } finally {
+      setSubscribing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="portfolio-loading">
@@ -376,6 +332,32 @@ const PortfolioPublic = () => {
       <div className="portfolio-error">
         <h2>Portfolio Not Found</h2>
         <p>{error || 'The requested portfolio does not exist.'}</p>
+        <button 
+          onClick={() => navigate('/')} 
+          style={{ 
+            marginTop: '20px', 
+            padding: '10px 20px', 
+            background: '#3b82f6', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          Go to Home
+        </button>
+        <div style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
+          <details>
+            <summary style={{ cursor: 'pointer' }}>Debug Info (Click to expand)</summary>
+            <pre style={{ textAlign: 'left', background: '#f5f5f5', padding: '10px', borderRadius: '4px', marginTop: '10px' }}>
+              URL Params:{'\n'}
+              - portfolioId: {portfolioId || 'not set'}{'\n'}
+              - username: {username || 'not set'}{'\n'}
+              {'\n'}
+              Check browser console for more details.
+            </pre>
+          </details>
+        </div>
       </div>
     )
   }
@@ -508,18 +490,48 @@ const PortfolioPublic = () => {
             </motion.div>
           )}
           
-          {portfolio.contactEmail && (
-            <motion.button
-              onClick={() => navigate('/booking-page')}
-              className="contact-button"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+          {/* Action Buttons */}
+          <motion.div
+            className="action-buttons"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <button
+              onClick={handleScheduleAppointment}
+              className="action-button appointment-button"
             >
-              <Mail size={20} />
-              Get in Touch
-            </motion.button>
-          )}
+              <Video size={20} />
+              Schedule Appointment
+            </button>
+            
+            {/* Only show Subscribe button if user is not the portfolio owner */}
+            {(() => {
+              // Check if current user owns this portfolio
+              if (currentUser) {
+                const storedUser = localStorage.getItem('user')
+                const currentUserId = storedUser ? JSON.parse(storedUser).username : null
+                
+                const isOwner = portfolio.userId === currentUser.username || 
+                               portfolio.userId === currentUser.email || 
+                               portfolio.userId === currentUserId ||
+                               portfolio.name === currentUser.username;
+                
+                if (isOwner) return null; // Don't show button if owner
+              }
+              
+              return (
+                <button
+                  onClick={handleSubscribe}
+                  className={`action-button subscribe-button ${isSubscribed ? 'subscribed' : ''}`}
+                  disabled={subscribing}
+                >
+                  {isSubscribed ? <BellOff size={20} /> : <Bell size={20} />}
+                  {subscribing ? 'Processing...' : (isSubscribed ? 'Unsubscribe' : 'Subscribe')}
+                </button>
+              );
+            })()}
+          </motion.div>
         </div>
       </section>
 
@@ -548,6 +560,91 @@ const PortfolioPublic = () => {
         </section>
       )}
 
+      {/* Education Section */}
+      {portfolio.sections.education && portfolio.sectionContent?.education && portfolio.sectionContent.education.length > 0 && (
+        <section className="education-section">
+          <div className="section-container">
+            <motion.h2 
+              className="section-title"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              {portfolio.sectionNames?.education || 'Education'}
+            </motion.h2>
+            <div className="timeline">
+              {portfolio.sectionContent.education.map((edu: any, index: number) => (
+                <motion.div 
+                  key={edu.id} 
+                  className="timeline-item"
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div className="timeline-marker"></div>
+                  <div className="timeline-content">
+                    <h3>{edu.schoolName}</h3>
+                    <h4>{edu.level} - {edu.course}</h4>
+                    <p className="timeline-date">
+                      {edu.startDate && new Date(edu.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                      {' - '}
+                      {edu.endDate && new Date(edu.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Experience Section */}
+      {portfolio.sections.experience && portfolio.sectionContent?.experience && portfolio.sectionContent.experience.length > 0 && (
+        <section className="experience-section">
+          <div className="section-container">
+            <motion.h2 
+              className="section-title"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              {portfolio.sectionNames?.experience || 'Experience'}
+            </motion.h2>
+            <div className="timeline">
+              {portfolio.sectionContent.experience.map((exp: any, index: number) => (
+                <motion.div 
+                  key={exp.id} 
+                  className="timeline-item"
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div className="timeline-marker"></div>
+                  <div className="timeline-content">
+                    <h3>{exp.role}</h3>
+                    <h4>{exp.company} • {exp.type}</h4>
+                    <p className="timeline-date">
+                      {exp.startDate && new Date(exp.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                      {' - '}
+                      {exp.endDate && new Date(exp.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                    </p>
+                    {exp.achievements && exp.achievements.length > 0 && (
+                      <ul className="achievements-list">
+                        {exp.achievements.filter((a: string) => a.trim()).map((achievement: string, idx: number) => (
+                          <li key={idx}>{achievement}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Projects Section */}
       {portfolio.sections.projects && projects.length > 0 && (
         <section className="projects-section">
@@ -558,7 +655,7 @@ const PortfolioPublic = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              Projects
+              {portfolio.sectionNames?.projects || 'Projects'}
             </motion.h2>
             <div className="projects-grid">
               {projects.map((project, index) => (
@@ -608,6 +705,41 @@ const PortfolioPublic = () => {
         </section>
       )}
 
+      {/* Publications Section */}
+      {portfolio.sections.publications && portfolio.sectionContent?.publications && portfolio.sectionContent.publications.length > 0 && (
+        <section className="publications-section">
+          <div className="section-container">
+            <motion.h2 
+              className="section-title"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              {portfolio.sectionNames?.publications || 'Publications'}
+            </motion.h2>
+            <div className="publications-list">
+              {portfolio.sectionContent.publications.map((pub: any, index: number) => (
+                <motion.div 
+                  key={pub.id} 
+                  className="publication-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <h3>{pub.title}</h3>
+                  <p className="publication-org">{pub.organization}</p>
+                  <p className="publication-date">
+                    {pub.date && new Date(pub.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                  </p>
+                  {pub.description && <p className="publication-desc">{pub.description}</p>}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Skills Section */}
       {portfolio.sections.skills && skills.length > 0 && (
         <section className="skills-section">
@@ -618,7 +750,7 @@ const PortfolioPublic = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              Skills & Expertise
+              {portfolio.sectionNames?.skills || 'Skills & Expertise'}
             </motion.h2>
             <div className="skills-categories">
               {Object.entries(groupedSkills).map(([category, categorySkills], catIndex) => (
@@ -665,7 +797,7 @@ const PortfolioPublic = () => {
       )}
 
       {/* Testimonials Carousel Section */}
-      {testimonials.length > 0 && (
+      {portfolio.sections.testimonials && testimonials.length > 0 && (
         <section className="testimonials-section">
           <div className="section-container">
             <motion.h2 
@@ -674,7 +806,7 @@ const PortfolioPublic = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              What People Say
+              {portfolio.sectionNames?.testimonials || 'What People Say'}
             </motion.h2>
             
             <div className="testimonials-carousel">
@@ -771,7 +903,7 @@ const PortfolioPublic = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              Get In Touch
+              {portfolio.sectionNames?.contact || 'Get In Touch'}
             </motion.h2>
             
             <div className="contact-content">
@@ -785,22 +917,59 @@ const PortfolioPublic = () => {
                 <p>Feel free to reach out for collaborations, opportunities, or just a friendly chat!</p>
                 
                 <div className="contact-details">
-                  {portfolio.contactEmail && (
-                    <div className="contact-detail-item">
-                      <Mail size={20} />
-                      <a href={`mailto:${portfolio.contactEmail}`}>{portfolio.contactEmail}</a>
-                    </div>
+                  {/* Display custom contact info if provided */}
+                  {portfolio.sectionContent?.contact && portfolio.sectionContent.contact.length > 0 ? (
+                    <>
+                      {portfolio.sectionContent.contact.map((contact: any, index: number) => (
+                        <div key={contact.id || index} className="contact-info-group">
+                          {contact.name && (
+                            <div className="contact-detail-item">
+                              <User size={20} />
+                              <span>{contact.name}</span>
+                            </div>
+                          )}
+                          {contact.email && (
+                            <div className="contact-detail-item">
+                              <Mail size={20} />
+                              <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                            </div>
+                          )}
+                          {contact.phone && (
+                            <div className="contact-detail-item">
+                              <Phone size={20} />
+                              <a href={`tel:${contact.phone}`}>{contact.phone}</a>
+                            </div>
+                          )}
+                          {contact.address && (
+                            <div className="contact-detail-item">
+                              <MapPin size={20} />
+                              <span>{contact.address}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    /* Default contact info if no custom contact provided */
+                    <>
+                      {portfolio.contactEmail && (
+                        <div className="contact-detail-item">
+                          <Mail size={20} />
+                          <a href={`mailto:${portfolio.contactEmail}`}>{portfolio.contactEmail}</a>
+                        </div>
+                      )}
+                      
+                      <div className="contact-detail-item">
+                        <MapPin size={20} />
+                        <span>Available for remote work</span>
+                      </div>
+                      
+                      <div className="contact-detail-item">
+                        <Calendar size={20} />
+                        <span>Response time: 24-48 hours</span>
+                      </div>
+                    </>
                   )}
-                  
-                  <div className="contact-detail-item">
-                    <MapPin size={20} />
-                    <span>Available for remote work</span>
-                  </div>
-                  
-                  <div className="contact-detail-item">
-                    <Calendar size={20} />
-                    <span>Response time: 24-48 hours</span>
-                  </div>
                 </div>
               </motion.div>
 
