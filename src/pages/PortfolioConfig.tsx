@@ -33,8 +33,6 @@ import {
   Award,
   MessageSquare,
   Github,
-  Linkedin,
-  Twitter,
   ExternalLink,
   GraduationCap,
   BookOpen,

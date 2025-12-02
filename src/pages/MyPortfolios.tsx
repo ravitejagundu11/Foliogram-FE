@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@contexts/AuthContext'
 import { apiClient } from '@services/api'
 import type { Portfolio } from '../types/portfolio'
+import PageHeader from '@components/PageHeader'
 import {
   Eye,
   Edit,
@@ -17,9 +18,11 @@ import {
   Plus,
   AlertCircle,
   Check,
-  X
+  X,
+  Briefcase
 } from 'lucide-react'
 import '../styles/MyPortfolios.css'
+import '../styles/PageHeader.css'
 
 const MyPortfolios = () => {
   const navigate = useNavigate()
@@ -377,27 +380,20 @@ const MyPortfolios = () => {
 
   return (
     <div className="my-portfolios-container">
-      {/* Header */}
-      <motion.div
-        className="portfolios-header"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="header-content">
-          <h1 className="page-title">My Portfolios</h1>
-          <p className="page-subtitle">
-            Manage all your published portfolios in one place
-          </p>
-        </div>
-        <button
-          className="create-portfolio-btn"
-          onClick={() => navigate('/templates')}
-        >
-          <Plus size={20} />
-          Create New Portfolio
-        </button>
-      </motion.div>
+      <PageHeader
+        title="My Portfolios"
+        subtitle="Manage all your published portfolios in one place"
+        icon={Briefcase}
+        actions={
+          <button
+            className="create-portfolio-btn"
+            onClick={() => navigate('/templates')}
+          >
+            <Plus size={20} />
+            Create New Portfolio
+          </button>
+        }
+      />
 
       {/* Error State */}
       {error && (

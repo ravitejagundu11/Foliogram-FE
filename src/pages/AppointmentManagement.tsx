@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { FiUser, FiClock, FiCalendar, FiExternalLink, FiMail, FiPhone, FiBriefcase, FiCheck, FiX, FiInfo, FiFolder } from "react-icons/fi";
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { apiClient } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
+import PageHeader from '@components/PageHeader';
 import type { Appointment } from "../types/appointment";
+import '../styles/PageHeader.css';
 
 const AppointmentManagement: React.FC = () => {
   const { user } = useAuth();
@@ -337,46 +340,37 @@ const AppointmentManagement: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
-      {/* PAGE HEADER */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <FiCalendar className="text-blue-600" size={32} />
-                Appointment Management
-              </h1>
-              <p className="text-gray-600 mt-1">Manage your appointments and bookings</p>
-            </div>
-            
-            {/* VIEW MODE TOGGLE - Moved to header */}
-            <div className="flex gap-2 p-1.5 bg-gray-100 rounded-xl border border-gray-200">
-              <button
-                onClick={() => setViewMode('received')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-                  viewMode === 'received' 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md transform scale-105' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                }`}
-              >
-                <FiUser size={16} />
-                Received ({receivedAppointments.length})
-              </button>
-              <button
-                onClick={() => setViewMode('booked')}
-                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-                  viewMode === 'booked' 
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-md transform scale-105' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                }`}
-              >
-                <FiFolder size={16} />
-                My Bookings ({bookedAppointments.length})
-              </button>
-            </div>
+      <PageHeader
+        title="Appointment Management"
+        subtitle="Manage your appointments and bookings"
+        icon={CalendarIcon}
+        actions={
+          <div className="flex gap-2 p-1.5 bg-gray-100 rounded-xl border border-gray-200">
+            <button
+              onClick={() => setViewMode('received')}
+              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                viewMode === 'received' 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md transform scale-105' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+              }`}
+            >
+              <FiUser size={16} />
+              Received ({receivedAppointments.length})
+            </button>
+            <button
+              onClick={() => setViewMode('booked')}
+              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                viewMode === 'booked' 
+                  ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-md transform scale-105' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+              }`}
+            >
+              <FiFolder size={16} />
+              My Bookings ({bookedAppointments.length})
+            </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-8 flex gap-6">
         {/* LEFT STATS & FILTER PANEL */}

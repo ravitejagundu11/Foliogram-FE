@@ -29,13 +29,6 @@ import InteriorDesignerTemplate from '../components/templates/InteriorDesignerTe
 import TeacherTemplate from '../components/templates/TeacherTemplate'
 import '../styles/PortfolioPublic.css'
 
-interface ContactFormData {
-  name: string
-  email: string
-  subject: string
-  message: string
-}
-
 const PortfolioPublic = () => {
   const { username, portfolioId } = useParams<{ username?: string; portfolioId?: string }>()
   const navigate = useNavigate()
@@ -50,19 +43,8 @@ const PortfolioPublic = () => {
   
   // Modal & Carousel States
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0)
   const [showShareMenu, setShowShareMenu] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  
-  // Contact Form State
-  const [contactForm, setContactForm] = useState<ContactFormData>({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  })
-  const [sendingContact, setSendingContact] = useState(false)
-  const [contactSuccess, setContactSuccess] = useState(false)
   
   // Subscription State
   const [subscribing, setSubscribing] = useState(false)
@@ -230,19 +212,6 @@ const PortfolioPublic = () => {
     fetchPortfolioData()
   }, [username, portfolioId])
 
-  // Testimonial Carousel Handlers
-  const nextTestimonial = () => {
-    setCurrentTestimonialIndex((prev) => 
-      prev === testimonials.length - 1 ? 0 : prev + 1
-    )
-  }
-
-  const prevTestimonial = () => {
-    setCurrentTestimonialIndex((prev) => 
-      prev === 0 ? testimonials.length - 1 : prev - 1
-    )
-  }
-
   // Project Image Navigation
   const nextImage = () => {
     if (!selectedProject) return
@@ -278,24 +247,6 @@ const PortfolioPublic = () => {
     }
     
     setShowShareMenu(false)
-  }
-
-  // Contact Form Handler
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSendingContact(true)
-
-    try {
-      await apiClient.post(`/portfolios/${portfolio?.id}/contact`, contactForm)
-      setContactSuccess(true)
-      setContactForm({ name: '', email: '', subject: '', message: '' })
-      setTimeout(() => setContactSuccess(false), 5000)
-    } catch (error) {
-      console.error('Error sending message:', error)
-      alert('Failed to send message. Please try again.')
-    } finally {
-      setSendingContact(false)
-    }
   }
 
   const handleScheduleAppointment = () => {

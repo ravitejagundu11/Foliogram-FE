@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useUserManagement } from '@contexts/UserManagementContext'
 import { useAuth } from '@contexts/AuthContext'
+import { Users } from 'lucide-react'
+import PageHeader from '@components/PageHeader'
 import '../styles/UserManagementPage.css'
+import '../styles/PageHeader.css'
 
 const UserManagementPage = () => {
   const { users, updateUserRole, removeUser } = useUserManagement()
@@ -42,10 +45,11 @@ const UserManagementPage = () => {
 
   return (
     <div className="user-management-container">
-      <div className="user-management-header">
-        <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-600 mt-2">Manage user roles and permissions</p>
-      </div>
+      <PageHeader
+        title="User Management"
+        subtitle="Manage user roles and permissions"
+        icon={Users}
+      />
 
       <div className="users-table-container">
         <table className="users-table">

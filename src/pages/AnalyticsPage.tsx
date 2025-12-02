@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "../components/ui/card";
+import PageHeader from '../components/PageHeader';
 import {
   Tooltip,
   PieChart,
@@ -24,10 +25,12 @@ import {
   PolarRadiusAxis,
   Radar,
 } from "recharts";
-import { Eye, Heart, ExternalLink, Trash2, EyeOff, Upload, FileText, MessageCircle, Share2, BarChart } from "lucide-react";
+import { Eye, Heart, ExternalLink, Trash2, EyeOff, Upload, FileText, MessageCircle, Share2, BarChart, BarChart3 } from "lucide-react";
 import { apiClient } from "../services/api";
 import type { Portfolio } from "../types/portfolio";
 import type { BlogPost } from "../types/blog";
+import "../styles/AnalyticsPage.css";
+import "../styles/PageHeader.css";
 
 export default function AnalyticsPage() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -546,10 +549,14 @@ export default function AnalyticsPage() {
   const displayedBlogPosts = showUnpublishedPosts ? allBlogPosts : blogPosts;
 
   return (
-    <div className="p-6 space-y-8 w-full max-w-6xl mx-auto">
-
-      <h1 className="text-3xl font-bold tracking-tight">Analytics Overview</h1>
-      <p className="text-gray-500">Track how your portfolio performs across the internet.</p>
+    <div>
+      <PageHeader
+        title="Analytics Overview"
+        subtitle="Track how your portfolio performs across the internet"
+        icon={BarChart3}
+      />
+      
+      <div className="p-6 space-y-8 w-full max-w-6xl mx-auto">
 
       {/* PUBLISHED PORTFOLIOS SECTION */}
       <Card className="shadow-md rounded-xl border border-gray-200">
@@ -1362,6 +1369,7 @@ export default function AnalyticsPage() {
         </Card>
       )}
 
+    </div>
     </div>
   );
 }

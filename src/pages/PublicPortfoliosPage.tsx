@@ -5,6 +5,7 @@ import { useAuth } from '@contexts/AuthContext'
 import { useSubscription } from '@contexts/SubscriptionContext'
 import { apiClient } from '@services/api'
 import type { Portfolio } from '../types/portfolio'
+import PageHeader from '@components/PageHeader'
 import {
   Calendar,
   Bell,
@@ -17,6 +18,7 @@ import {
   Filter
 } from 'lucide-react'
 import '../styles/PublicPortfoliosPage.css'
+import '../styles/PageHeader.css'
 
 const PublicPortfoliosPage = () => {
   const navigate = useNavigate()
@@ -166,36 +168,29 @@ const PublicPortfoliosPage = () => {
 
   return (
     <div className="public-portfolios-container">
-      {/* Header */}
-      <motion.div
-        className="public-portfolios-header"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="header-content">
-          <h1 className="page-title">Discover Portfolios</h1>
-          <p className="page-subtitle">
-            Explore professional portfolios, connect with creators, and schedule appointments
-          </p>
-        </div>
-        <div className="header-stats">
-          <div className="stat-card">
-            <Briefcase size={24} />
-            <div>
-              <div className="stat-number">{portfolios.length}</div>
-              <div className="stat-label">Portfolios</div>
+      <PageHeader
+        title="Discover Portfolios"
+        subtitle="Explore professional portfolios, connect with creators, and schedule appointments"
+        icon={Briefcase}
+        actions={
+          <div className="header-stats">
+            <div className="stat-card">
+              <Briefcase size={24} />
+              <div>
+                <div className="stat-number">{portfolios.length}</div>
+                <div className="stat-label">Portfolios</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <User size={24} />
+              <div>
+                <div className="stat-number">{new Set(portfolios.map(p => p.userId)).size}</div>
+                <div className="stat-label">Creators</div>
+              </div>
             </div>
           </div>
-          <div className="stat-card">
-            <User size={24} />
-            <div>
-              <div className="stat-number">{new Set(portfolios.map(p => p.userId)).size}</div>
-              <div className="stat-label">Creators</div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+        }
+      />
 
       {/* Filters */}
       <motion.div

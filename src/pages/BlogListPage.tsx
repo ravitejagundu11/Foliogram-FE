@@ -2,8 +2,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useBlog } from '@contexts/BlogContext'
 import { useAuth } from '@contexts/AuthContext'
+import { FileText, Plus } from 'lucide-react'
 import UserProfileModal from '@components/UserProfileModal'
+import PageHeader from '@components/PageHeader'
 import '../styles/BlogListPage.css'
+import '../styles/PageHeader.css'
 
 const BlogListPage = () => {
   const navigate = useNavigate()
@@ -55,12 +58,17 @@ const BlogListPage = () => {
 
   return (
     <div className="blog-list-container">
-      <div className="blog-list-header">
-        <h1 className="text-3xl font-bold text-gray-900">Blog Posts</h1>
-        <button onClick={() => navigate('/blog/create')} className="btn-create-post">
-          Create New Post
-        </button>
-      </div>
+      <PageHeader
+        title="Blog Posts"
+        subtitle="Share your thoughts and ideas with the community"
+        icon={FileText}
+        actions={
+          <button onClick={() => navigate('/blog/create')} className="btn-create-post">
+            <Plus size={20} />
+            Create New Post
+          </button>
+        }
+      />
 
       {posts.length === 0 ? (
         <div className="empty-state">

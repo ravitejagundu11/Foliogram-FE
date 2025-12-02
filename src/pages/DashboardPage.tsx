@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@contexts/AuthContext'
+import { LayoutDashboard } from 'lucide-react'
+import PageHeader from '@components/PageHeader'
+import '../styles/PageHeader.css'
 
 const DashboardPage = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
 
   const stats = [
     { label: 'Total Projects', value: '24', change: '+12%' },
@@ -13,29 +14,15 @@ const DashboardPage = () => {
   ]
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Welcome back! Here's an overview of your portfolio.</p>
-        </div>
-        {/* <button
-          onClick={() => navigate('/profile')}
-          className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-gray-800 transition-colors"
-          title="Go to Profile"
-        >
-          {user?.profileImage ? (
-            <img src={user.profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
-          ) : (
-            <span className="text-lg font-bold">
-              {user?.firstName?.charAt(0)}
-              {user?.lastName?.charAt(0)}
-            </span>
-          )}
-        </button> */}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Welcome back! Here's an overview of your portfolio."
+        icon={LayoutDashboard}
+      />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
             <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
@@ -90,6 +77,7 @@ const DashboardPage = () => {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

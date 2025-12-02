@@ -1,0 +1,82 @@
+/* Standard Page Header Styles */
+.page-header-standard {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 2rem;
+}
+
+.page-header-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.page-header-text {
+  flex: 1;
+}
+
+.page-header-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  line-height: 1.2;
+}
+
+.page-header-icon {
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+.page-header-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0.5rem 0 0 0;
+  line-height: 1.5;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .page-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.5rem 1rem;
+  }
+
+  .page-header-title {
+    font-size: 1.75rem;
+  }
+
+  .page-header-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .page-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header-title {
+    font-size: 1.5rem;
+  }
+
+  .page-header-icon {
+    width: 24px;
+    height: 24px;
+  }
+}

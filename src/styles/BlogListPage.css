@@ -14,18 +14,23 @@
 }
 
 .btn-create-post {
-  padding: 0.75rem 1.5rem;
+  padding: 0.625rem 1.25rem;
   background: #000000;
   color: white;
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn-create-post:hover {
   background: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .empty-state {
