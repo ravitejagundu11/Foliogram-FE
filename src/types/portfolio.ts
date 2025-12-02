@@ -65,6 +65,13 @@ export interface Portfolio extends PortfolioConfig {
   likes: number
   createdAt: string
   updatedAt: string
+  // Optional embedded data (used when storing in localStorage)
+  projects?: Project[]
+  skills?: Skill[]
+  testimonials?: Testimonial[]
+  sectionOrder?: string[]
+  sectionNames?: Record<string, string>
+  sectionContent?: Record<string, any[]>
 }
 
 export interface Project {

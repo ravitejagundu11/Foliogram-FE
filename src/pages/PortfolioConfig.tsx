@@ -191,10 +191,16 @@ const PortfolioConfigComponent = () => {
       // Generate portfolio ID if new
       const savedPortfolioId = config.id || `portfolio-${Date.now()}`
 
+      // Generate slug from name or use ID
+      const slug = config.name 
+        ? config.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        : savedPortfolioId
+
       // Prepare complete portfolio data with all content
       const portfolioData = {
         ...config,
         id: savedPortfolioId,
+        slug: slug, // Save slug for URL access
         profilePicture: profilePictureUrl,
         sectionOrder,
         sectionNames,
@@ -272,11 +278,7 @@ const PortfolioConfigComponent = () => {
         }
       }
 
-      // Generate unique published URL
-      const slug = config.name 
-        ? config.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-        : savedPortfolioId
-      
+      // Generate unique published URL using the slug
       const publishedUrl = `${window.location.origin}/portfolio/${slug}`
       
       alert(`✅ Portfolio saved and published successfully!\n\nYour portfolio is now live at:\n${publishedUrl}\n\nShare this URL with anyone to showcase your work!`)
