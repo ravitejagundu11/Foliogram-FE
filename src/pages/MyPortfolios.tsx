@@ -56,7 +56,10 @@ const MyPortfolios = () => {
         const currentUsername = user?.username || ''
         const currentEmail = user?.email || ''
         
+        console.log('========== MyPortfolios Debug ==========')
         console.log('Current user:', { username: currentUsername, email: currentEmail })
+        console.log('Looking for portfolios with userId matching:', currentUsername, 'OR', currentEmail)
+        console.log('========================================')
         
         const allPortfolios: Portfolio[] = []
         
@@ -71,10 +74,15 @@ const MyPortfolios = () => {
             
             // Filter to only include portfolios that belong to current user
             // Compare against username and email since userId can be either
-            const userPortfolios = portfoliosList.filter(portfolio => 
-              portfolio.userId === currentUsername || 
-              portfolio.userId === currentEmail
-            )
+            // Use case-insensitive comparison and trim whitespace
+            const userPortfolios = portfoliosList.filter(portfolio => {
+              const portfolioUserId = (portfolio.userId || '').toLowerCase().trim()
+              const username = currentUsername.toLowerCase().trim()
+              const email = currentEmail.toLowerCase().trim()
+              const matches = portfolioUserId === username || portfolioUserId === email
+              console.log(`Portfolio "${portfolio.name}": userId="${portfolio.userId}" (normalized: "${portfolioUserId}"), matches: ${matches}`)
+              return matches
+            })
             
             console.log('Filtered user portfolios:', userPortfolios.map(p => ({ id: p.id, name: p.name, userId: p.userId })))
             
@@ -86,6 +94,7 @@ const MyPortfolios = () => {
         }
         
         // Method 2: Check individual portfolio_${id} keys
+        console.log('Checking individual portfolio_* keys in localStorage...')
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i)
           if (key && key.startsWith('portfolio_')) {
@@ -94,13 +103,20 @@ const MyPortfolios = () => {
               if (portfolioData) {
                 const portfolio = JSON.parse(portfolioData) as Portfolio
                 
-                // Check if portfolio belongs to current user
-                if (portfolio.userId === currentUsername || 
-                    portfolio.userId === currentEmail) {
+                // Check if portfolio belongs to current user (case-insensitive)
+                const portfolioUserId = (portfolio.userId || '').toLowerCase().trim()
+                const username = currentUsername.toLowerCase().trim()
+                const email = currentEmail.toLowerCase().trim()
+                const matches = portfolioUserId === username || portfolioUserId === email
+                
+                console.log(`Individual key "${key}": name="${portfolio.name}", userId="${portfolio.userId}", matches=${matches}`)
+                
+                if (matches) {
                   // Check if not already added from portfolios object
                   const exists = allPortfolios.some(p => p.id === portfolio.id)
                   if (!exists) {
                     allPortfolios.push(portfolio)
+                    console.log(`Added portfolio "${portfolio.name}" from individual key`)
                   }
                 }
               }
@@ -114,6 +130,54 @@ const MyPortfolios = () => {
         allPortfolios.sort((a, b) => 
           new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
         )
+        
+        console.log('========== Final Results ==========')
+        console.log('Total portfolios found:', allPortfolios.length)
+        console.log('Portfolio names:', allPortfolios.map(p => p.name))
+        console.log('=====================================')
+        
+        // MIGRATION: Fix portfolios with empty userId
+        if (allPortfolios.length === 0 && (currentUsername || currentEmail)) {
+          console.log('⚠️ No portfolios found for current user. Checking for portfolios with empty userId...')
+          
+          const portfoliosObj = localStorage.getItem('portfolios')
+          if (portfoliosObj) {
+            const parsedPortfolios = JSON.parse(portfoliosObj)
+            const portfoliosList = Object.values(parsedPortfolios) as Portfolio[]
+            const orphanedPortfolios = portfoliosList.filter(p => !p.userId || p.userId.trim() === '')
+            
+            if (orphanedPortfolios.length > 0) {
+              console.log(`Found ${orphanedPortfolios.length} portfolio(s) with empty userId. Migrating to current user...`)
+              
+              let migrated = 0
+              orphanedPortfolios.forEach(portfolio => {
+                console.log(`Migrating portfolio "${portfolio.name}" to userId: ${currentEmail || currentUsername}`)
+                portfolio.userId = currentEmail || currentUsername
+                parsedPortfolios[portfolio.id] = portfolio
+                
+                // Also update individual key if it exists
+                const individualKey = `portfolio_${portfolio.id}`
+                if (localStorage.getItem(individualKey)) {
+                  localStorage.setItem(individualKey, JSON.stringify(portfolio))
+                }
+                
+                allPortfolios.push(portfolio)
+                migrated++
+              })
+              
+              // Save updated portfolios object
+              localStorage.setItem('portfolios', JSON.stringify(parsedPortfolios))
+              console.log(`✅ Successfully migrated ${migrated} portfolio(s)`)
+              
+              // Sort again after migration
+              allPortfolios.sort((a, b) => 
+                new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+              )
+            } else {
+              console.log('No orphaned portfolios found.')
+            }
+          }
+        }
         
         setPortfolios(allPortfolios)
         console.log('Total portfolios loaded from localStorage:', allPortfolios.length)

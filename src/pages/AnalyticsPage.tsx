@@ -81,9 +81,13 @@ export default function AnalyticsPage() {
         console.log('All portfolios from localStorage:', portfoliosList.map(p => ({ id: p.id, name: p.name, userId: p.userId })));
         
         // Filter to only include portfolios owned by current user
-        const userPortfolios = portfoliosList.filter((p: Portfolio) => 
-          p.userId === currentUsername || p.userId === currentEmail
-        );
+        // Use case-insensitive comparison and trim whitespace
+        const userPortfolios = portfoliosList.filter((p: Portfolio) => {
+          const portfolioUserId = (p.userId || '').toLowerCase().trim()
+          const username = currentUsername.toLowerCase().trim()
+          const email = currentEmail.toLowerCase().trim()
+          return portfolioUserId === username || portfolioUserId === email
+        });
         
         console.log('Filtered user portfolios:', userPortfolios.map(p => ({ id: p.id, name: p.name, userId: p.userId })));
         

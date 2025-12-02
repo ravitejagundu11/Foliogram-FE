@@ -413,6 +413,12 @@ const PortfolioConfigComponent = () => {
       }
 
       // Prepare complete portfolio data with all content
+      // CRITICAL: Ensure userId is always set
+      const currentUserId = user?.email || user?.username
+      if (!currentUserId) {
+        throw new Error('User must be logged in to save portfolio')
+      }
+      
       const portfolioData = {
         ...config,
         id: savedPortfolioId,
@@ -432,9 +438,11 @@ const PortfolioConfigComponent = () => {
         updatedAt: new Date().toISOString(),
         views: existingPortfolio?.views || 0,
         likes: existingPortfolio?.likes || 0,
-        // Use current user's email as userId for consistent identification
-        userId: existingPortfolio?.userId || user?.email || user?.username || ''
+        // ALWAYS set userId to current user's email (preferred) or username
+        userId: currentUserId
       }
+      
+      console.log('Saving portfolio with userId:', portfolioData.userId)
 
       try {
         // Try to save to backend API

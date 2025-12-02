@@ -28,8 +28,18 @@ const AppointmentManagement: React.FC = () => {
       const response = await apiClient.get<Appointment[]>('/appointments/all');
       
       // Separate appointments into received (I'm the owner) and booked (I'm the booker)
-      const received = response.filter(apt => apt.portfolioOwnerId === user.username || apt.portfolioOwnerId === user.email);
-      const booked = response.filter(apt => apt.booker.email === user.email || apt.booker.name === `${user.firstName} ${user.lastName}`);
+      // Use case-insensitive comparison
+      const received = response.filter(apt => {
+        const ownerId = (apt.portfolioOwnerId || '').toLowerCase().trim()
+        const username = (user.username || '').toLowerCase().trim()
+        const email = (user.email || '').toLowerCase().trim()
+        return ownerId === username || ownerId === email
+      });
+      const booked = response.filter(apt => {
+        const bookerEmail = (apt.booker.email || '').toLowerCase().trim()
+        const userEmail = (user.email || '').toLowerCase().trim()
+        return bookerEmail === userEmail || apt.booker.name === `${user.firstName} ${user.lastName}`
+      });
       
       setReceivedAppointments(received);
       setBookedAppointments(booked);
@@ -37,16 +47,77 @@ const AppointmentManagement: React.FC = () => {
       console.warn('Backend API not available, loading from localStorage');
       const localAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
       
-      // Separate appointments
-      const received = localAppointments.filter((apt: Appointment) => 
-        apt.portfolioOwnerId === user.username || apt.portfolioOwnerId === user.email
-      );
-      const booked = localAppointments.filter((apt: Appointment) => 
-        apt.booker.email === user.email || apt.booker.name === `${user.firstName} ${user.lastName}`
-      );
+      console.log('========== Appointments Debug ==========')
+      console.log('Current user:', { username: user.username, email: user.email })
+      console.log('Total appointments in localStorage:', localAppointments.length)
       
-      setReceivedAppointments(received);
-      setBookedAppointments(booked);
+      // Separate appointments with case-insensitive comparison
+      const received = localAppointments.filter((apt: Appointment) => {
+        const ownerId = (apt.portfolioOwnerId || '').toLowerCase().trim()
+        const username = (user.username || '').toLowerCase().trim()
+        const email = (user.email || '').toLowerCase().trim()
+        const matches = ownerId === username || ownerId === email
+        console.log(`Appointment for ${apt.portfolioOwnerName}: ownerId="${apt.portfolioOwnerId}", matches=${matches}`)
+        return matches
+      });
+      const booked = localAppointments.filter((apt: Appointment) => {
+        const bookerEmail = (apt.booker.email || '').toLowerCase().trim()
+        const userEmail = (user.email || '').toLowerCase().trim()
+        return bookerEmail === userEmail || apt.booker.name === `${user.firstName} ${user.lastName}`
+      });
+      
+      console.log('Received appointments:', received.length)
+      console.log('Booked appointments:', booked.length)
+      console.log('========================================')
+      
+      // MIGRATION: Fix appointments with invalid portfolioOwnerId
+      let needsMigration = false
+      const portfolios = JSON.parse(localStorage.getItem('portfolios') || '{}')
+      
+      const migratedAppointments = localAppointments.map((apt: Appointment) => {
+        // Check if portfolioOwnerId is invalid (empty or 'owner-id')
+        if (!apt.portfolioOwnerId || apt.portfolioOwnerId.trim() === '' || apt.portfolioOwnerId === 'owner-id') {
+          // Try to find the correct owner from the portfolio
+          const portfolio = portfolios[apt.portfolioId]
+          if (portfolio && portfolio.userId) {
+            console.log(`⚠️ Migrating appointment: "${apt.portfolioOwnerName}" from ownerId="${apt.portfolioOwnerId}" to "${portfolio.userId}"`)
+            needsMigration = true
+            return {
+              ...apt,
+              portfolioOwnerId: portfolio.userId
+            }
+          } else {
+            console.warn(`Cannot migrate appointment for ${apt.portfolioOwnerName}: Portfolio not found or has no userId`)
+          }
+        }
+        return apt
+      })
+      
+      if (needsMigration) {
+        console.log('✅ Migrating appointments to localStorage...')
+        localStorage.setItem('appointments', JSON.stringify(migratedAppointments))
+        
+        // Re-filter with migrated data
+        const migratedReceived = migratedAppointments.filter((apt: Appointment) => {
+          const ownerId = (apt.portfolioOwnerId || '').toLowerCase().trim()
+          const username = (user.username || '').toLowerCase().trim()
+          const email = (user.email || '').toLowerCase().trim()
+          return ownerId === username || ownerId === email
+        });
+        const migratedBooked = migratedAppointments.filter((apt: Appointment) => {
+          const bookerEmail = (apt.booker.email || '').toLowerCase().trim()
+          const userEmail = (user.email || '').toLowerCase().trim()
+          return bookerEmail === userEmail || apt.booker.name === `${user.firstName} ${user.lastName}`
+        });
+        
+        console.log('After migration - Received:', migratedReceived.length, 'Booked:', migratedBooked.length)
+        
+        setReceivedAppointments(migratedReceived);
+        setBookedAppointments(migratedBooked);
+      } else {
+        setReceivedAppointments(received);
+        setBookedAppointments(booked);
+      }
     } finally {
       setLoading(false);
     }

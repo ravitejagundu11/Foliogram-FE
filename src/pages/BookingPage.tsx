@@ -127,10 +127,17 @@ const BookingPage: React.FC = () => {
     } catch (err) {
       console.warn('Backend API not available, saving to localStorage');
       
+      // CRITICAL: Ensure portfolioOwnerId is set correctly
+      if (!portfolio.userId || portfolio.userId.trim() === '') {
+        alert('Cannot book appointment: Portfolio owner information is missing. Please contact the portfolio owner to update their profile.');
+        setSubmitting(false);
+        return;
+      }
+      
       const appointment = {
         id: Date.now().toString(),
         portfolioId,
-        portfolioOwnerId: portfolio.userId || 'owner-id',
+        portfolioOwnerId: portfolio.userId,
         portfolioOwnerName: portfolio.name || 'Portfolio Owner',
         booker: {
           id: Date.now().toString(),
