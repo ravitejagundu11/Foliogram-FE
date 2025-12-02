@@ -24,6 +24,7 @@ import CreatePostPage from '@pages/CreatePostPage'
 import UserSearchPage from '@pages/UserSearchPage'
 import AnalyticsPage from '@pages/AnalyticsPage'
 import NotificationsPage from '@pages/NotificationsPage'
+import PublicPortfoliosPage from '@pages/PublicPortfoliosPage'
 import NotFound from '@pages/NotFound'
 import AppointmentManagement from './pages/AppointmentManagement'
 import BookingPage from './pages/BookingPage'
@@ -73,6 +74,7 @@ function App() {
               />
               <Route path="about" element={<AboutPage />} />
               <Route path="contact" element={<ContactPage />} />
+              <Route path="portfolios" element={<PublicPortfoliosPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="signup" element={<SignUpPage />} />
               <Route path="appointment-management" element={<AppointmentManagement/>} />

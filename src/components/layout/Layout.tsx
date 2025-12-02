@@ -5,7 +5,7 @@ import { useNotification } from '@contexts/NotificationContext'
 import { useState } from 'react'
 import Footer from './Footer'
 import PageSelector from '@components/common/PageSelector'
-import { Home, FileText, Calendar, BarChart3, Settings, LogOut, UserCircle, Users, Book, ChevronLeft, ChevronRight, Bell, User, Layout as LayoutIcon, Shield, Folders } from 'lucide-react'
+import { Home, FileText, Calendar, BarChart3, Settings, LogOut, UserCircle, Users, Book, ChevronLeft, ChevronRight, Bell, User, Layout as LayoutIcon, Shield, Folders, Briefcase } from 'lucide-react'
 import '../../styles/Layout.css'
 
 const Layout = () => {
@@ -115,6 +115,15 @@ const Layout = () => {
                   {isSidebarCollapsed && <span className="nav-tooltip">My Portfolios</span>}
                 </button>
                 <button
+                  className={`sidebar-nav-item ${isActive('/portfolios') ? 'active' : ''}`}
+                  onClick={() => navigate('/portfolios')}
+                  title="Portfolios"
+                >
+                  <Briefcase size={24} />
+                  {!isSidebarCollapsed && <span className="nav-label">Portfolios</span>}
+                  {isSidebarCollapsed && <span className="nav-tooltip">Portfolios</span>}
+                </button>
+                <button
                   className={`sidebar-nav-item ${isActive('/appointment-management') ? 'active' : ''}`}
                   onClick={() => navigate('/appointment-management')}
                   title="Appointments"
@@ -188,6 +197,15 @@ const Layout = () => {
                   <Book size={24} />
                   {!isSidebarCollapsed && <span className="nav-label">Contact</span>}
                   {isSidebarCollapsed && <span className="nav-tooltip">Contact</span>}
+                </button>
+                <button
+                  className={`sidebar-nav-item ${isActive('/portfolios') ? 'active' : ''}`}
+                  onClick={() => navigate('/portfolios')}
+                  title="Portfolios"
+                >
+                  <Briefcase size={24} />
+                  {!isSidebarCollapsed && <span className="nav-label">Portfolios</span>}
+                  {isSidebarCollapsed && <span className="nav-tooltip">Portfolios</span>}
                 </button>
               </>
             )}
