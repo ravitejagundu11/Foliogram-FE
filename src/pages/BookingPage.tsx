@@ -108,6 +108,21 @@ const BookingPage: React.FC = () => {
       };
 
       await apiClient.post('/appointments', appointmentData);
+      
+      // Send notification to portfolio owner about new appointment
+      if (portfolio.userId) {
+        addNotification({
+          type: 'appointment',
+          recipientUsername: portfolio.userId,
+          actorUsername: formData.bookerEmail,
+          actorName: formData.bookerName,
+          appointmentId: `appt_${Date.now()}`,
+          appointmentDate: formData.date,
+          appointmentTime: formData.time,
+          message: `booked an appointment for ${new Date(formData.date).toLocaleDateString()} at ${formData.time}`,
+        });
+      }
+      
       setConfirmed(true);
     } catch (err) {
       console.warn('Backend API not available, saving to localStorage');

@@ -52,9 +52,11 @@ const MyPortfolios = () => {
       
       // Fallback to localStorage
       try {
-        const userId = localStorage.getItem('userId') || ''
-        const userEmail = user?.email || localStorage.getItem('userEmail') || ''
-        const currentUserId = localStorage.getItem('currentUserId') || userId
+        // Get current user's identifiers from AuthContext
+        const currentUsername = user?.username || ''
+        const currentEmail = user?.email || ''
+        
+        console.log('Current user:', { username: currentUsername, email: currentEmail })
         
         const allPortfolios: Portfolio[] = []
         
@@ -65,9 +67,19 @@ const MyPortfolios = () => {
             const parsedPortfolios = JSON.parse(portfoliosObj)
             const portfoliosList = Object.values(parsedPortfolios) as Portfolio[]
             
-            // Add all portfolios from the object (they should all belong to current user)
-            allPortfolios.push(...portfoliosList)
-            console.log('Loaded portfolios from "portfolios" object:', portfoliosList.length)
+            console.log('All portfolios from localStorage:', portfoliosList.map(p => ({ id: p.id, name: p.name, userId: p.userId })))
+            
+            // Filter to only include portfolios that belong to current user
+            // Compare against username and email since userId can be either
+            const userPortfolios = portfoliosList.filter(portfolio => 
+              portfolio.userId === currentUsername || 
+              portfolio.userId === currentEmail
+            )
+            
+            console.log('Filtered user portfolios:', userPortfolios.map(p => ({ id: p.id, name: p.name, userId: p.userId })))
+            
+            allPortfolios.push(...userPortfolios)
+            console.log('Loaded portfolios from "portfolios" object:', userPortfolios.length)
           } catch (parseErr) {
             console.warn('Failed to parse portfolios object:', parseErr)
           }
@@ -83,9 +95,8 @@ const MyPortfolios = () => {
                 const portfolio = JSON.parse(portfolioData) as Portfolio
                 
                 // Check if portfolio belongs to current user
-                if (portfolio.userId === userId || 
-                    portfolio.userId === userEmail || 
-                    portfolio.userId === currentUserId) {
+                if (portfolio.userId === currentUsername || 
+                    portfolio.userId === currentEmail) {
                   // Check if not already added from portfolios object
                   const exists = allPortfolios.some(p => p.id === portfolio.id)
                   if (!exists) {

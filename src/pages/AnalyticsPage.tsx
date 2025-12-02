@@ -58,10 +58,37 @@ export default function AnalyticsPage() {
         console.warn('Backend API not available, loading from localStorage');
         
         // Fallback: Load from localStorage
+        // Get current user from AuthContext (stored in localStorage)
+        const currentUserData = localStorage.getItem('user');
+        let currentUsername = '';
+        let currentEmail = '';
+        
+        if (currentUserData) {
+          try {
+            const parsedUser = JSON.parse(currentUserData);
+            currentUsername = parsedUser.username || '';
+            currentEmail = parsedUser.email || '';
+          } catch (parseErr) {
+            console.error('Failed to parse user data:', parseErr);
+          }
+        }
+        
+        console.log('Current user:', { username: currentUsername, email: currentEmail });
+        
         const localPortfolios = JSON.parse(localStorage.getItem('portfolios') || '{}');
         const portfoliosList = Object.values(localPortfolios) as Portfolio[];
-        setAllPortfolios(portfoliosList);
-        const publishedPortfolios = portfoliosList.filter((p: any) => p.isPublished);
+        
+        console.log('All portfolios from localStorage:', portfoliosList.map(p => ({ id: p.id, name: p.name, userId: p.userId })));
+        
+        // Filter to only include portfolios owned by current user
+        const userPortfolios = portfoliosList.filter((p: Portfolio) => 
+          p.userId === currentUsername || p.userId === currentEmail
+        );
+        
+        console.log('Filtered user portfolios:', userPortfolios.map(p => ({ id: p.id, name: p.name, userId: p.userId })));
+        
+        setAllPortfolios(userPortfolios);
+        const publishedPortfolios = userPortfolios.filter((p: any) => p.isPublished);
         
         setPortfolios(publishedPortfolios);
         
@@ -82,9 +109,32 @@ export default function AnalyticsPage() {
         console.warn('Backend API not available, loading blog posts from localStorage');
         
         // Fallback: Load from localStorage
+        // Get current user from AuthContext (stored in localStorage)
+        const currentUserData = localStorage.getItem('user');
+        let currentUsername = '';
+        
+        if (currentUserData) {
+          try {
+            const parsedUser = JSON.parse(currentUserData);
+            currentUsername = parsedUser.username || '';
+          } catch (parseErr) {
+            console.error('Failed to parse user data:', parseErr);
+          }
+        }
+        
+        console.log('Current user for blog posts:', currentUsername);
+        
         const localPosts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
-        setAllBlogPosts(localPosts);
-        const publishedPosts = localPosts.filter((p: BlogPost) => p.published);
+        
+        console.log('All blog posts from localStorage:', localPosts.map((p: BlogPost) => ({ id: p.id, title: p.title, author: p.author })));
+        
+        // Filter to only include posts authored by current user
+        const userPosts = localPosts.filter((p: BlogPost) => p.author === currentUsername);
+        
+        console.log('Filtered user blog posts:', userPosts.map((p: BlogPost) => ({ id: p.id, title: p.title, author: p.author })));
+        
+        setAllBlogPosts(userPosts);
+        const publishedPosts = userPosts.filter((p: BlogPost) => p.published);
         setBlogPosts(publishedPosts);
       }
     }
@@ -200,6 +250,30 @@ export default function AnalyticsPage() {
   };
 
   const handleDeletePortfolio = async (portfolioId: string) => {
+    // Check ownership before allowing delete
+    const portfolio = allPortfolios.find(p => p.id === portfolioId);
+    if (!portfolio) return;
+    
+    // Get current user from localStorage (set by AuthContext)
+    const currentUserData = localStorage.getItem('user');
+    let currentUsername = '';
+    let currentEmail = '';
+    
+    if (currentUserData) {
+      try {
+        const parsedUser = JSON.parse(currentUserData);
+        currentUsername = parsedUser.username || '';
+        currentEmail = parsedUser.email || '';
+      } catch (parseErr) {
+        console.error('Failed to parse user data:', parseErr);
+      }
+    }
+    
+    if (portfolio.userId !== currentUsername && portfolio.userId !== currentEmail) {
+      alert('You do not have permission to delete this portfolio.');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to delete this portfolio? This action cannot be undone.')) return;
     
     try {
@@ -227,6 +301,30 @@ export default function AnalyticsPage() {
   };
 
   const handleUnpublishPortfolio = async (portfolioId: string) => {
+    // Check ownership before allowing unpublish
+    const portfolio = allPortfolios.find(p => p.id === portfolioId);
+    if (!portfolio) return;
+    
+    // Get current user from localStorage (set by AuthContext)
+    const currentUserData = localStorage.getItem('user');
+    let currentUsername = '';
+    let currentEmail = '';
+    
+    if (currentUserData) {
+      try {
+        const parsedUser = JSON.parse(currentUserData);
+        currentUsername = parsedUser.username || '';
+        currentEmail = parsedUser.email || '';
+      } catch (parseErr) {
+        console.error('Failed to parse user data:', parseErr);
+      }
+    }
+    
+    if (portfolio.userId !== currentUsername && portfolio.userId !== currentEmail) {
+      alert('You do not have permission to unpublish this portfolio.');
+      return;
+    }
+    
     if (!window.confirm('Unpublish this portfolio? It will no longer be accessible via its public URL.')) return;
     
     try {
@@ -300,6 +398,28 @@ export default function AnalyticsPage() {
   };
 
   const handleDeleteBlogPost = async (postId: string) => {
+    // Check ownership before allowing delete
+    const post = allBlogPosts.find(p => p.id === postId);
+    if (!post) return;
+    
+    // Get current user from localStorage (set by AuthContext)
+    const currentUserData = localStorage.getItem('user');
+    let currentUsername = '';
+    
+    if (currentUserData) {
+      try {
+        const parsedUser = JSON.parse(currentUserData);
+        currentUsername = parsedUser.username || '';
+      } catch (parseErr) {
+        console.error('Failed to parse user data:', parseErr);
+      }
+    }
+    
+    if (post.author !== currentUsername) {
+      alert('You do not have permission to delete this blog post.');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to delete this blog post? This action cannot be undone.')) return;
     
     try {
@@ -327,6 +447,28 @@ export default function AnalyticsPage() {
   };
 
   const handleUnpublishBlogPost = async (postId: string) => {
+    // Check ownership before allowing unpublish
+    const post = allBlogPosts.find(p => p.id === postId);
+    if (!post) return;
+    
+    // Get current user from localStorage (set by AuthContext)
+    const currentUserData = localStorage.getItem('user');
+    let currentUsername = '';
+    
+    if (currentUserData) {
+      try {
+        const parsedUser = JSON.parse(currentUserData);
+        currentUsername = parsedUser.username || '';
+      } catch (parseErr) {
+        console.error('Failed to parse user data:', parseErr);
+      }
+    }
+    
+    if (post.author !== currentUsername) {
+      alert('You do not have permission to unpublish this blog post.');
+      return;
+    }
+    
     if (!window.confirm('Unpublish this blog post? It will no longer be visible to others.')) return;
     
     try {
@@ -352,6 +494,28 @@ export default function AnalyticsPage() {
   };
 
   const handleRepublishBlogPost = async (postId: string) => {
+    // Check ownership before allowing republish
+    const post = allBlogPosts.find(p => p.id === postId);
+    if (!post) return;
+    
+    // Get current user from localStorage (set by AuthContext)
+    const currentUserData = localStorage.getItem('user');
+    let currentUsername = '';
+    
+    if (currentUserData) {
+      try {
+        const parsedUser = JSON.parse(currentUserData);
+        currentUsername = parsedUser.username || '';
+      } catch (parseErr) {
+        console.error('Failed to parse user data:', parseErr);
+      }
+    }
+    
+    if (post.author !== currentUsername) {
+      alert('You do not have permission to republish this blog post.');
+      return;
+    }
+    
     try {
       await apiClient.patch(`/blog/${postId}`, { published: true });
       const updatedAll = allBlogPosts.map(p => 

@@ -102,6 +102,11 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Send notification if liking and not own post
     if (isLiking && post.author !== user.username) {
+      console.log('Sending like notification:', {
+        recipientUsername: post.author,
+        actorUsername: user.username,
+        currentUser: user.username
+      })
       addNotification({
         type: 'like',
         recipientUsername: post.author,
@@ -130,6 +135,11 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Send notification if not own post
     if (post.author !== user.username) {
+      console.log('Sending share notification:', {
+        recipientUsername: post.author,
+        actorUsername: user.username,
+        currentUser: user.username
+      })
       addNotification({
         type: 'share',
         recipientUsername: post.author,
@@ -168,6 +178,11 @@ export const BlogProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Send notification if not own post
     if (post.author !== user.username) {
+      console.log('Sending comment notification:', {
+        recipientUsername: post.author,
+        actorUsername: user.username,
+        currentUser: user.username
+      })
       addNotification({
         type: 'comment',
         recipientUsername: post.author,

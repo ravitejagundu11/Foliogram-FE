@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useDropzone } from 'react-dropzone'
 import { SketchPicker } from 'react-color'
+import { useAuth } from '@contexts/AuthContext'
 import { apiClient, projectApi, skillApi, testimonialApi } from '@services/api'
 import type { PortfolioConfig, Template, Project, Skill, Testimonial, Portfolio } from '../types/portfolio'
 import ProjectForm from '@components/ProjectForm'
@@ -48,6 +49,7 @@ const PortfolioConfigComponent = () => {
   const { templateId } = useParams<{ templateId: string }>()
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
   
   const [template, setTemplate] = useState<Template | null>(null)
   const [availableTemplates, setAvailableTemplates] = useState<Template[]>([])
@@ -430,7 +432,8 @@ const PortfolioConfigComponent = () => {
         updatedAt: new Date().toISOString(),
         views: existingPortfolio?.views || 0,
         likes: existingPortfolio?.likes || 0,
-        userId: existingPortfolio?.userId || localStorage.getItem('userId') || localStorage.getItem('currentUserId') || ''
+        // Use current user's email as userId for consistent identification
+        userId: existingPortfolio?.userId || user?.email || user?.username || ''
       }
 
       try {
