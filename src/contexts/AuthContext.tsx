@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
+import { authApi } from '@services/api'
 
 export interface UserData {
   username: string
@@ -14,7 +15,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   user: UserData | null
   login: (userData: UserData) => void
-  logout: () => void
+  logout: () => Promise<void>
   updateUser: (userData: Partial<UserData>) => void
   setProfileImage: (image: string) => void
   hasRole: (allowedRoles: Array<'user' | 'admin' | 'recruiter'>) => boolean
@@ -44,11 +45,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return allowedRoles.includes(role)
   }
 
-  const logout = () => {
-    setIsAuthenticated(false)
-    setUser(null)
-    localStorage.removeItem('user')
-    localStorage.removeItem('isAuthenticated')
+  const logout = async () => {
+    try {
+      // Call logout API
+      await authApi.logout()
+    } catch (error) {
+      // Continue with logout even if API call fails
+      console.error('Logout API error:', error)
+    } finally {
+      // Clear local state and storage
+      setIsAuthenticated(false)
+      setUser(null)
+      localStorage.removeItem('user')
+      localStorage.removeItem('isAuthenticated')
+      localStorage.removeItem('token')
+    }
   }
 
   const updateUser = (userData: Partial<UserData>) => {

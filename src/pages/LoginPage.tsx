@@ -1,52 +1,72 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@contexts/AuthContext'
-import { findDemoUserByUsernameOrEmail } from '@utils/demoUsers'
+import { authApi } from '@services/api'
 
 import '../styles/LoginPage.css'
 
 const LoginPage = () => {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [invalid, setInvalid] = useState({ username: false, password: false })
+  const [invalid, setInvalid] = useState({ email: false, password: false })
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { login } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
     // Validate empty fields first
-    const emptyUsername = username.trim() === ''
+    const emptyEmail = email.trim() === ''
     const emptyPassword = password.trim() === ''
-    if (emptyUsername || emptyPassword) {
-      setInvalid({ username: emptyUsername, password: emptyPassword })
+    if (emptyEmail || emptyPassword) {
+      setInvalid({ email: emptyEmail, password: emptyPassword })
       setError('Please fill in all fields')
       return
     }
 
     // reset empty-field validation
-    setInvalid({ username: false, password: false })
+    setInvalid({ email: false, password: false })
 
-    // Validate credentials against demo users
-    const found = findDemoUserByUsernameOrEmail(username)
-    if (!found || found.password !== password) {
-      setError('Invalid username or password. Try: user@foliogram.com / password123')
-      return
+    setLoading(true)
+
+    try {
+      // Call login API
+      const response = await authApi.login({ email, password })
+      
+      // Parse full name
+      const nameParts = response.user.full_name.split(' ')
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || ''
+      
+      // Successful login - set user data
+      const userData = {
+        username: response.user.email.split('@')[0],
+        email: response.user.email,
+        firstName,
+        lastName,
+        contactNumber: '',
+        role: 'user' as const,
+        profileImage: '',
+      }
+      
+      // Store everything in localStorage first
+      localStorage.setItem('token', response.token)
+      localStorage.setItem('user', JSON.stringify(userData))
+      localStorage.setItem('isAuthenticated', 'true')
+      
+      // Then update context
+      login(userData)
+      
+      // Navigate to dashboard
+      navigate('/dashboard', { replace: true })
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid email or password')
+    } finally {
+      setLoading(false)
     }
-
-    // Successful login - set user data and redirect to dashboard
-    login({
-      username: found.username,
-      email: found.email,
-      firstName: found.firstName,
-      lastName: found.lastName,
-      contactNumber: found.contactNumber,
-      role: found.role,
-      profileImage: found.profileImage,
-    })
-    navigate('/dashboard')
   }
 
   return (
@@ -65,21 +85,22 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="login-form-group">
-            <label htmlFor="username" className="login-form-label">
-              Username or Email
+            <label htmlFor="email" className="login-form-label">
+              Email
             </label>
             <input
-              type="text"
-              id="username"
-              value={username}
+              type="email"
+              id="email"
+              value={email}
               onChange={(e) => {
-                setUsername(e.target.value)
+                setEmail(e.target.value)
                 setError('')
-                setInvalid((s) => ({ ...s, username: false }))
+                setInvalid((s) => ({ ...s, email: false }))
               }}
-              placeholder="Enter your username or email"
-              className={`login-form-input ${invalid.username ? 'input-error' : ''}`}
+              placeholder="Enter your email"
+              className={`login-form-input ${invalid.email ? 'input-error' : ''}`}
               required
+              disabled={loading}
             />
           </div>
 
@@ -99,14 +120,16 @@ const LoginPage = () => {
               placeholder="Enter your password"
               className={`login-form-input ${invalid.password ? 'input-error' : ''}`}
               required
+              disabled={loading}
             />
           </div>
 
           <button
             type="submit"
             className="login-button"
+            disabled={loading}
           >
-            Sign In
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 

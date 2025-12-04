@@ -46,27 +46,47 @@ class ApiClient {
   }
 
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.instance.get(url, config)
+    const response: AxiosResponse<any> = await this.instance.get(url, config)
+    // Handle wrapped response from backend (status, data structure)
+    if (response.data && response.data.data !== undefined) {
+      return response.data.data as T
+    }
     return response.data
   }
 
   async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.instance.post(url, data, config)
+    const response: AxiosResponse<any> = await this.instance.post(url, data, config)
+    // Handle wrapped response from backend (status, data structure)
+    if (response.data && response.data.data !== undefined) {
+      return response.data.data as T
+    }
     return response.data
   }
 
   async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.instance.put(url, data, config)
+    const response: AxiosResponse<any> = await this.instance.put(url, data, config)
+    // Handle wrapped response from backend (status, data structure)
+    if (response.data && response.data.data !== undefined) {
+      return response.data.data as T
+    }
     return response.data
   }
 
   async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.instance.patch(url, data, config)
+    const response: AxiosResponse<any> = await this.instance.patch(url, data, config)
+    // Handle wrapped response from backend (status, data structure)
+    if (response.data && response.data.data !== undefined) {
+      return response.data.data as T
+    }
     return response.data
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.instance.delete(url, config)
+    const response: AxiosResponse<any> = await this.instance.delete(url, config)
+    // Handle wrapped response from backend (status, data structure)
+    if (response.data && response.data.data !== undefined) {
+      return response.data.data as T
+    }
     return response.data
   }
 }
@@ -124,4 +144,32 @@ export const testimonialApi = {
   create: (portfolioId: string, data: any) => apiClient.post(`/portfolios/${portfolioId}/testimonials`, data),
   update: (portfolioId: string, testimonialId: string, data: any) => apiClient.put(`/portfolios/${portfolioId}/testimonials/${testimonialId}`, data),
   delete: (portfolioId: string, testimonialId: string) => apiClient.delete(`/portfolios/${portfolioId}/testimonials/${testimonialId}`),
+}
+
+// Auth API endpoints
+export interface RegisterRequest {
+  full_name: string
+  email: string
+  password: string
+}
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface AuthResponse {
+  token: string
+  user: {
+    id: number
+    full_name: string
+    email: string
+    created_at: string
+  }
+}
+
+export const authApi = {
+  register: (data: RegisterRequest) => apiClient.post<AuthResponse>('/foliogram/register', data),
+  login: (data: LoginRequest) => apiClient.post<AuthResponse>('/foliogram/login', data),
+  logout: () => apiClient.post('/foliogram/logout'),
 }

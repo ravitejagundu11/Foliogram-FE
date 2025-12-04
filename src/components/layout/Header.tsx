@@ -16,8 +16,8 @@ const Header = () => {
   const adminMenuRef = useRef<HTMLDivElement | null>(null)
   const notificationRef = useRef<HTMLDivElement | null>(null)
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/login')
   }
 
