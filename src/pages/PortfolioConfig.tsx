@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useDropzone } from 'react-dropzone'
@@ -137,6 +137,84 @@ const PortfolioConfigComponent = () => {
     contact: []
   })
 
+  // Define loadExistingPortfolio before useEffect
+  const loadExistingPortfolio = useCallback(async (id: string) => {
+    try {
+      // Try API first
+      try {
+        const response: any = await apiClient.get(`/portfolios/${id}`)
+        const portfolio = response.data as Portfolio
+        
+        // Populate config with existing data
+        setConfig({
+          id: portfolio.id,
+          templateId: portfolio.templateId,
+          name: portfolio.name,
+          headline: portfolio.headline,
+          description: portfolio.description,
+          profilePicture: portfolio.profilePicture,
+          theme: portfolio.theme,
+          typography: portfolio.typography,
+          layout: portfolio.layout,
+          sections: portfolio.sections,
+          socialLinks: portfolio.socialLinks
+        })
+        
+        setPortfolioId(portfolio.id)
+        
+        if (portfolio.projects) setProjects(portfolio.projects)
+        if (portfolio.skills) setSkills(portfolio.skills)
+        if (portfolio.testimonials) setTestimonials(portfolio.testimonials)
+        if (portfolio.sectionOrder) setSectionOrder(portfolio.sectionOrder)
+        if (portfolio.sectionNames) setSectionNames(portfolio.sectionNames)
+        if (portfolio.sectionContent) setSectionContent(portfolio.sectionContent)
+        if (portfolio.profilePicture) setProfilePreview(portfolio.profilePicture)
+        
+        console.log('Loaded existing portfolio:', portfolio)
+      } catch (apiError) {
+        console.warn('API not available, checking localStorage')
+        const storedData = localStorage.getItem(`portfolio_${id}`)
+        
+        if (storedData) {
+          const portfolio = JSON.parse(storedData) as Portfolio
+          
+          setConfig({
+            id: portfolio.id,
+            templateId: portfolio.templateId,
+            name: portfolio.name,
+            headline: portfolio.headline,
+            description: portfolio.description,
+            profilePicture: portfolio.profilePicture,
+            theme: portfolio.theme,
+            typography: portfolio.typography,
+            layout: portfolio.layout,
+            sections: portfolio.sections,
+            socialLinks: portfolio.socialLinks
+          })
+          
+          setPortfolioId(portfolio.id)
+          
+          if (portfolio.projects) setProjects(portfolio.projects)
+          if (portfolio.skills) setSkills(portfolio.skills)
+          if (portfolio.testimonials) setTestimonials(portfolio.testimonials)
+          if (portfolio.sectionOrder) setSectionOrder(portfolio.sectionOrder)
+          if (portfolio.sectionNames) setSectionNames(portfolio.sectionNames)
+          if (portfolio.sectionContent) setSectionContent(portfolio.sectionContent)
+          if (portfolio.profilePicture) setProfilePreview(portfolio.profilePicture)
+          
+          console.log('Loaded portfolio from localStorage:', portfolio)
+        } else {
+          alert('Portfolio not found')
+          navigate('/my-portfolios')
+        }
+      }
+    } catch (err) {
+      console.error('Error loading portfolio:', err)
+      alert('Failed to load portfolio')
+      navigate('/my-portfolios')
+    }
+  }, [navigate])
+
   useEffect(() => {
     if (templateId) {
       fetchTemplate(templateId)
@@ -149,7 +227,7 @@ const PortfolioConfigComponent = () => {
     if (state?.editMode && state?.portfolioId) {
       loadExistingPortfolio(state.portfolioId)
     }
-  }, [templateId, location.state])
+  }, [templateId, location.state, loadExistingPortfolio])
 
   // Load projects, skills, and testimonials when portfolioId is set
   useEffect(() => {
@@ -217,97 +295,145 @@ const PortfolioConfigComponent = () => {
     }
   }
 
-  const loadExistingPortfolio = async (id: string) => {
-    try {
-      // Try API first
-      try {
-        const response: any = await apiClient.get(`/portfolios/${id}`)
-        const portfolio = response.data as Portfolio
-        
-        // Populate config with existing data
-        setConfig({
-          id: portfolio.id,
-          templateId: portfolio.templateId,
-          name: portfolio.name,
-          headline: portfolio.headline,
-          description: portfolio.description,
-          profilePicture: portfolio.profilePicture,
-          theme: portfolio.theme,
-          typography: portfolio.typography,
-          layout: portfolio.layout,
-          sections: portfolio.sections,
-          socialLinks: portfolio.socialLinks
-        })
-        
-        setPortfolioId(portfolio.id)
-        
-        // Load embedded content if available
-        if (portfolio.projects) setProjects(portfolio.projects)
-        if (portfolio.skills) setSkills(portfolio.skills)
-        if (portfolio.testimonials) setTestimonials(portfolio.testimonials)
-        if (portfolio.sectionOrder) setSectionOrder(portfolio.sectionOrder)
-        if (portfolio.sectionNames) setSectionNames(portfolio.sectionNames)
-        if (portfolio.sectionContent) setSectionContent(portfolio.sectionContent)
-        if (portfolio.profilePicture) setProfilePreview(portfolio.profilePicture)
-        
-        console.log('Loaded portfolio from API:', portfolio)
-      } catch (apiErr) {
-        console.warn('API load failed, trying localStorage:', apiErr)
-        
-        // Fallback to localStorage
-        const storedData = localStorage.getItem(`portfolio_${id}`)
-        if (storedData) {
-          const portfolio = JSON.parse(storedData) as Portfolio
-          
-          setConfig({
-            id: portfolio.id,
-            templateId: portfolio.templateId,
-            name: portfolio.name,
-            headline: portfolio.headline,
-            description: portfolio.description,
-            profilePicture: portfolio.profilePicture,
-            theme: portfolio.theme,
-            typography: portfolio.typography,
-            layout: portfolio.layout,
-            sections: portfolio.sections,
-            socialLinks: portfolio.socialLinks
-          })
-          
-          setPortfolioId(portfolio.id)
-          
-          if (portfolio.projects) setProjects(portfolio.projects)
-          if (portfolio.skills) setSkills(portfolio.skills)
-          if (portfolio.testimonials) setTestimonials(portfolio.testimonials)
-          if (portfolio.sectionOrder) setSectionOrder(portfolio.sectionOrder)
-          if (portfolio.sectionNames) setSectionNames(portfolio.sectionNames)
-          if (portfolio.sectionContent) setSectionContent(portfolio.sectionContent)
-          if (portfolio.profilePicture) setProfilePreview(portfolio.profilePicture)
-          
-          console.log('Loaded portfolio from localStorage:', portfolio)
-        } else {
-          alert('Portfolio not found')
-          navigate('/my-portfolios')
-        }
-      }
-    } catch (err) {
-      console.error('Error loading portfolio:', err)
-      alert('Failed to load portfolio')
-      navigate('/my-portfolios')
-    }
-  }
-
   // Render the appropriate template for preview
   const renderPreviewTemplate = () => {
-    // Create a portfolio object for preview
+    // Sample data for preview when no user data exists
+    const sampleProjects = projects.length > 0 ? projects : [
+      {
+        id: 'sample-1',
+        portfolioId: 'preview',
+        title: 'E-Commerce Platform',
+        description: 'A full-stack e-commerce solution with payment integration, real-time inventory management, and advanced analytics dashboard.',
+        images: ['https://images.unsplash.com/photo-1557821552-17105176677c?w=800'],
+        techStack: ['React', 'Node.js', 'MongoDB', 'Stripe'],
+        demoUrl: '#',
+        codeUrl: '#',
+        featured: true,
+        order: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'sample-2',
+        portfolioId: 'preview',
+        title: 'AI-Powered Analytics Dashboard',
+        description: 'Machine learning dashboard for predictive analytics with interactive data visualizations and automated reporting.',
+        images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800'],
+        techStack: ['Python', 'TensorFlow', 'React', 'PostgreSQL'],
+        demoUrl: '#',
+        codeUrl: '#',
+        featured: true,
+        order: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'sample-3',
+        portfolioId: 'preview',
+        title: 'Mobile Fitness App',
+        description: 'Cross-platform fitness tracking application with workout plans, nutrition tracking, and social features.',
+        images: ['https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800'],
+        techStack: ['React Native', 'Firebase', 'Redux'],
+        demoUrl: '#',
+        codeUrl: '#',
+        featured: false,
+        order: 2,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ]
+
+    const sampleSkills = skills.length > 0 ? skills : [
+      { id: 's1', portfolioId: 'preview', name: 'React', category: 'Frontend', proficiency: 5, order: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's2', portfolioId: 'preview', name: 'TypeScript', category: 'Frontend', proficiency: 5, order: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's3', portfolioId: 'preview', name: 'Node.js', category: 'Backend', proficiency: 4, order: 2, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's4', portfolioId: 'preview', name: 'Python', category: 'Backend', proficiency: 4, order: 3, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's5', portfolioId: 'preview', name: 'MongoDB', category: 'Database', proficiency: 4, order: 4, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's6', portfolioId: 'preview', name: 'PostgreSQL', category: 'Database', proficiency: 4, order: 5, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's7', portfolioId: 'preview', name: 'Docker', category: 'DevOps', proficiency: 3, order: 6, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's8', portfolioId: 'preview', name: 'AWS', category: 'DevOps', proficiency: 3, order: 7, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's9', portfolioId: 'preview', name: 'Git', category: 'Tools', proficiency: 5, order: 8, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 's10', portfolioId: 'preview', name: 'Figma', category: 'Tools', proficiency: 4, order: 9, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ]
+
+    const sampleTestimonials = testimonials.length > 0 ? testimonials : [
+      {
+        id: 't1',
+        portfolioId: 'preview',
+        name: 'Sarah Johnson',
+        role: 'Product Manager',
+        company: 'Tech Innovations Inc.',
+        content: 'Working with this professional was an absolute pleasure. Their attention to detail and technical expertise delivered results beyond our expectations.',
+        avatar: 'https://i.pravatar.cc/150?img=5',
+        rating: 5,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 't2',
+        portfolioId: 'preview',
+        name: 'Michael Chen',
+        role: 'CTO',
+        company: 'Digital Solutions Co.',
+        content: 'Outstanding work quality and excellent communication throughout the project. Highly recommend for any complex technical challenges.',
+        avatar: 'https://i.pravatar.cc/150?img=12',
+        rating: 5,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 't3',
+        portfolioId: 'preview',
+        name: 'Emily Rodriguez',
+        role: 'CEO',
+        company: 'Startup Ventures',
+        content: 'Exceptional problem-solving skills and innovative approach. Delivered the project on time with remarkable quality.',
+        avatar: 'https://i.pravatar.cc/150?img=9',
+        rating: 5,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ]
+
+    const sampleEducation = sectionContent.education && sectionContent.education.length > 0 ? sectionContent.education : [
+      { id: 'e1', schoolName: 'University of Technology', level: 'Bachelor\'s Degree', course: 'Computer Science', startDate: '2015-09', endDate: '2019-05' },
+      { id: 'e2', schoolName: 'Tech Institute', level: 'Master\'s Degree', course: 'Software Engineering', startDate: '2019-09', endDate: '2021-05' }
+    ]
+
+    const sampleExperience = sectionContent.experience && sectionContent.experience.length > 0 ? sectionContent.experience : [
+      { id: 'ex1', role: 'Senior Software Engineer', company: 'Tech Corp', type: 'Full Time', startDate: '2021-06', endDate: 'Present', description: 'Leading development of scalable web applications', achievements: ['Led team of 5 developers', 'Improved performance by 40%', 'Implemented CI/CD pipeline'] },
+      { id: 'ex2', role: 'Software Developer', company: 'StartupXYZ', type: 'Full Time', startDate: '2019-06', endDate: '2021-05', description: 'Developed full-stack applications using modern technologies', achievements: ['Built RESTful APIs', 'Created responsive UIs', 'Mentored junior developers'] }
+    ]
+
+    const samplePublications = sectionContent.publications && sectionContent.publications.length > 0 ? sectionContent.publications : [
+      { id: 'p1', title: 'Modern Web Development Best Practices', publisher: 'Tech Journal', date: '2023-03', url: '#', description: 'An in-depth guide to building scalable web applications' },
+      { id: 'p2', title: 'Machine Learning in Production', publisher: 'AI Conference 2023', date: '2023-08', url: '#', description: 'Research paper on deploying ML models at scale' }
+    ]
+
+    const sampleContact = sectionContent.contact && sectionContent.contact.length > 0 ? sectionContent.contact : [
+      { id: 'c1', type: 'email', value: 'your.email@example.com', label: 'Email' },
+      { id: 'c2', type: 'phone', value: '+1 (555) 123-4567', label: 'Phone' },
+      { id: 'c3', type: 'location', value: 'San Francisco, CA', label: 'Location' }
+    ]
+
+    const enrichedSectionContent = {
+      ...sectionContent,
+      education: sampleEducation,
+      experience: sampleExperience,
+      publications: samplePublications,
+      contact: sampleContact
+    }
+
+    // Create a portfolio object for preview with actual form data or sample data
     const previewPortfolio: Portfolio = {
       id: portfolioId || 'preview',
       userId: 'preview-user',
       templateId: config.templateId,
-      name: config.name || 'Your Name',
-      headline: config.headline,
-      description: config.description,
-      profilePicture: config.profilePicture,
-      contactEmail: sectionContent.contact?.[0]?.email || '',
+      name: config.name || 'John Doe',
+      headline: config.headline || 'Full Stack Developer | Software Engineer | Tech Enthusiast',
+      description: config.description || 'Passionate software engineer with 5+ years of experience building scalable web applications and leading development teams. Specialized in modern JavaScript frameworks, cloud architecture, and agile methodologies.',
+      profilePicture: config.profilePicture || profilePreview || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
+      contactEmail: enrichedSectionContent.contact?.[0]?.value || 'your.email@example.com',
       slug: 'preview',
       isPublished: false,
       views: 0,
@@ -318,20 +444,25 @@ const PortfolioConfigComponent = () => {
       typography: config.typography,
       layout: config.layout,
       sections: config.sections,
-      socialLinks: config.socialLinks,
-      projects: projects,
-      skills: skills,
-      testimonials: testimonials,
+      socialLinks: {
+        github: config.socialLinks.github || 'https://github.com',
+        linkedin: config.socialLinks.linkedin || 'https://linkedin.com',
+        twitter: config.socialLinks.twitter || 'https://twitter.com',
+        website: config.socialLinks.website || 'https://yourwebsite.com'
+      },
+      projects: sampleProjects,
+      skills: sampleSkills,
+      testimonials: sampleTestimonials,
       sectionOrder: sectionOrder,
       sectionNames: sectionNames,
-      sectionContent: sectionContent
+      sectionContent: enrichedSectionContent
     }
 
     const templateProps = {
       portfolio: previewPortfolio,
-      projects: projects,
-      skills: skills,
-      testimonials: testimonials,
+      projects: sampleProjects,
+      skills: sampleSkills,
+      testimonials: sampleTestimonials,
       onProjectClick: () => {}, // No-op for preview
       onScheduleAppointment: undefined, // Disabled in preview
       onSubscribe: undefined, // Disabled in preview

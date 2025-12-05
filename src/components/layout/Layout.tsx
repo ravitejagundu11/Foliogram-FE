@@ -39,11 +39,14 @@ const Layout = () => {
       >
         <div className="sidebar-content">
           {/* Logo Section */}
-          <div className="sidebar-logo">
+          <div className="sidebar-logo" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/')} style={{ cursor: 'pointer' }}>
             {isSidebarCollapsed ? (
-              <span className="sidebar-logo-letter">F</span>
+              <LayoutIcon className="sidebar-logo-icon" size={32} />
             ) : (
-              <span className="sidebar-logo-text">Foliogram</span>
+              <div className="sidebar-logo-full">
+                <LayoutIcon className="sidebar-logo-icon" size={28} />
+                <span className="sidebar-logo-text">Foliogram</span>
+              </div>
             )}
           </div>
 

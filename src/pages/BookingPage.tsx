@@ -247,7 +247,7 @@ const BookingPage: React.FC = () => {
 
                 {/* Time Slots */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <FiClock className="text-blue-600" /> Available Time Slots *
                   </label>
                   <div className="grid grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">

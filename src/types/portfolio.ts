@@ -71,7 +71,7 @@ export interface Portfolio extends PortfolioConfig {
   testimonials?: Testimonial[]
   sectionOrder?: string[]
   sectionNames?: Record<string, string>
-  sectionContent?: Record<string, any[]>
+  sectionContent?: Record<string, unknown[]>
 }
 
 export interface Project {
