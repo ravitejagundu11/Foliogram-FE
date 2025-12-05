@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '@contexts/AuthContext'
+import { PortfolioProvider } from '@contexts/PortfolioContext'
 import { UserManagementProvider } from '@contexts/UserManagementContext'
 import { BlogProvider } from '@contexts/BlogContext'
 import { SubscriptionProvider } from '@contexts/SubscriptionContext'
@@ -40,10 +41,11 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <UserManagementProvider>
-          <NotificationProvider>
-            <BlogProvider>
-              <SubscriptionProvider>
+        <PortfolioProvider>
+          <UserManagementProvider>
+            <NotificationProvider>
+              <BlogProvider>
+                <SubscriptionProvider>
               <Routes>
             {/* Public Portfolio View - No Layout */}
             <Route path="/portfolio/:portfolioId" element={<PortfolioPublic />} />
@@ -200,10 +202,11 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
-              </SubscriptionProvider>
-            </BlogProvider>
-          </NotificationProvider>
-        </UserManagementProvider>
+                </SubscriptionProvider>
+              </BlogProvider>
+            </NotificationProvider>
+          </UserManagementProvider>
+        </PortfolioProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

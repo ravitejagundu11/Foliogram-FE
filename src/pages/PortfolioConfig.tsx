@@ -97,6 +97,7 @@ const PortfolioConfigComponent = () => {
   const [profilePreview, setProfilePreview] = useState<string>('')
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(true)
+  const [isPublished, setIsPublished] = useState<boolean>(false)
   
   // New state for projects, skills, testimonials
   const [portfolioId, setPortfolioId] = useState<string | null>(null)
@@ -249,6 +250,7 @@ const PortfolioConfigComponent = () => {
         if (portfolio.sectionNames) setSectionNames(portfolio.sectionNames)
         if (portfolio.sectionContent) setSectionContent(portfolio.sectionContent)
         if (portfolio.profilePicture) setProfilePreview(portfolio.profilePicture)
+        if (portfolio.isPublished !== undefined) setIsPublished(portfolio.isPublished)
         
         console.log('Loaded portfolio from API:', portfolio)
       } catch (apiErr) {
@@ -282,6 +284,7 @@ const PortfolioConfigComponent = () => {
           if (portfolio.sectionNames) setSectionNames(portfolio.sectionNames)
           if (portfolio.sectionContent) setSectionContent(portfolio.sectionContent)
           if (portfolio.profilePicture) setProfilePreview(portfolio.profilePicture)
+          if (portfolio.isPublished !== undefined) setIsPublished(portfolio.isPublished)
           
           console.log('Loaded portfolio from localStorage:', portfolio)
         } else {
@@ -429,8 +432,8 @@ const PortfolioConfigComponent = () => {
         projects, // Include all projects
         skills, // Include all skills
         testimonials, // Include all testimonials
-        // Preserve existing publish status and dates when editing
-        isPublished: existingPortfolio?.isPublished ?? true,
+        // Use the isPublished state instead of preserving existing
+        isPublished: isPublished,
         publishedAt: existingPortfolio?.publishedAt || new Date().toISOString(),
         createdAt: existingPortfolio?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -929,6 +932,37 @@ const PortfolioConfigComponent = () => {
                       }
                     />
                   </div>
+                </div>
+
+                {/* Publish Toggle */}
+                <div className="form-group">
+                  <label className="form-label">
+                    <Eye size={18} />
+                    Publish Portfolio
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={isPublished}
+                        onChange={(e) => setIsPublished(e.target.checked)}
+                        style={{ marginRight: '0.5rem', width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '14px' }}>
+                        {isPublished ? 'Portfolio is published and visible to public' : 'Portfolio is private'}
+                      </span>
+                    </label>
+                  </div>
+                  {isPublished && config.name && (
+                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                      <p style={{ fontSize: '13px', color: '#0369a1', margin: 0 }}>
+                        📎 Share your portfolio: <br />
+                        <code style={{ background: '#e0f2fe', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                          {window.location.origin}/portfolio/{config.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+                        </code>
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

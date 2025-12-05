@@ -15,7 +15,7 @@ import {
   Linkedin,
   Link as LinkIcon
 } from 'lucide-react'
-import { apiClient } from '../services/api'
+import { apiClient, portfolioApi } from '../services/api'
 import type { Portfolio, Project, Skill, Testimonial } from '../types/portfolio'
 import ClassicProfessionalTemplate from '../components/templates/ClassicProfessionalTemplate'
 import ModernDarkTemplate from '../components/templates/ModernDarkTemplate'
@@ -96,106 +96,38 @@ const PortfolioPublic = () => {
   }
 
   useEffect(() => {
+    // Fetch portfolio data on mount
     const fetchPortfolioData = async () => {
       // portfolioId from URL params could actually be a slug, not an ID
       const identifier = username || portfolioId
       if (!identifier) {
         console.error('No identifier provided')
+        setError('Portfolio not found')
+        setLoading(false)
         return
       }
 
       try {
         setLoading(true)
         
-        let portfolioData: Portfolio | null = null
-        let projectsData: Project[] = []
-        let skillsData: Skill[] = []
-        let testimonialsData: Testimonial[] = []
-
         console.log('Fetching portfolio with identifier:', identifier)
         console.log('URL params - portfolioId:', portfolioId, 'username:', username)
 
-        // Try fetching from API first
-        try {
-          const endpoint = username 
-            ? `/portfolios/public/${username}` 
-            : `/portfolios/${identifier}/public`
-          
-          console.log('Trying API endpoint:', endpoint)
-          
-          const response = await apiClient.get<{
-            portfolio: Portfolio
-            projects: Project[]
-            skills: Skill[]
-            testimonials: Testimonial[]
-          }>(endpoint)
+        // Determine if identifier is a UUID or slug
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier)
+        
+        console.log('Fetching from public API, isUUID:', isUUID)
+        
+        const portfolioData = isUUID 
+          ? await portfolioApi.getPublicById(identifier)
+          : await portfolioApi.getPublicBySlug(identifier)
 
-          portfolioData = response.portfolio
-          projectsData = response.projects
-          skillsData = response.skills
-          testimonialsData = response.testimonials
-          
-          console.log('Successfully loaded from API')
-        } catch (apiError) {
-          console.warn('Backend API not available, fetching from localStorage:', apiError)
-          
-          // Fallback to localStorage
-          const localPortfolios = JSON.parse(localStorage.getItem('portfolios') || '{}')
-          const allPortfolios = Object.values(localPortfolios) as Portfolio[]
-          
-          console.log('Total portfolios in localStorage:', allPortfolios.length)
-          console.log('Available portfolio IDs:', Object.keys(localPortfolios))
-          console.log('Available portfolio slugs:', allPortfolios.map(p => p.slug))
-          
-          // Search through all portfolios - identifier could be slug, ID, or username
-          portfolioData = allPortfolios.find((p: Portfolio) => {
-            // Check multiple possibilities
-            const matches = 
-              p.id === identifier ||                    // Direct ID match
-              p.slug === identifier ||                  // Slug match
-              localPortfolios[identifier]?.id === p.id  // ID used as key in localStorage
-            
-            if (matches) {
-              console.log('✓ Found portfolio:', p.name, '| ID:', p.id, '| Slug:', p.slug)
-            }
-            
-            return matches
-          }) || null
-          
-          // If still not found, try direct localStorage access
-          if (!portfolioData && localPortfolios[identifier]) {
-            console.log('Found by direct localStorage key access')
-            portfolioData = localPortfolios[identifier]
-          }
-
-          if (!portfolioData) {
-            console.error('❌ Portfolio not found!')
-            console.error('Searched for identifier:', identifier)
-            console.error('Available portfolios:', allPortfolios.map(p => ({
-              id: p.id,
-              name: p.name,
-              slug: p.slug
-            })))
-            throw new Error('Portfolio not found')
-          }
-
-          console.log('✓ Successfully loaded portfolio from localStorage:', portfolioData.name)
-
-          // Extract embedded data from portfolio
-          projectsData = portfolioData.projects || []
-          skillsData = portfolioData.skills || []
-          testimonialsData = portfolioData.testimonials || []
-          
-          console.log('Loaded data - Projects:', projectsData.length, 'Skills:', skillsData.length, 'Testimonials:', testimonialsData.length)
-        }
-
-        // Check if portfolio is published
-        if (!portfolioData || !portfolioData.isPublished) {
-          setError('This portfolio is not published or does not exist.')
-          setLoading(false)
-          return
-        }
-
+        const projectsData = portfolioData.projects || []
+        const skillsData = portfolioData.skills || []
+        const testimonialsData = portfolioData.testimonials || []
+        
+        console.log('Successfully loaded from API:', portfolioData)
+        
         // Set the data
         setPortfolio(portfolioData)
         setProjects(projectsData)

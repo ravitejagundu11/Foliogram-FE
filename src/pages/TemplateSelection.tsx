@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { apiClient } from '@services/api'
+import { templateApi, Template } from '@services/api'
 import { useAuth } from '@contexts/AuthContext'
-import type { Template } from '../types/portfolio'
 import { Check, Sparkles, Search, Home, FileText, Calendar, BarChart3, Settings, LogOut, UserCircle } from 'lucide-react'
 import '../styles/TemplateSelection.css'
 
@@ -15,29 +14,30 @@ const TemplateSelection = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
-
-  const categories = [
-    'All',
-    'Engineers/Diploma',
-    'Creatives',
-    'Business',
-    'Academic'
-  ]
+  const [categories, setCategories] = useState<string[]>(['All'])
 
   useEffect(() => {
     fetchTemplates()
+    fetchCategories()
   }, [])
 
   const fetchTemplates = async () => {
     try {
-      const data = await apiClient.get<Template[]>('/templates')
+      const data = await templateApi.getAll()
       setTemplates(data)
     } catch (error) {
       console.error('Error fetching templates:', error)
-      // Fallback to demo templates
-      setTemplates(demoTemplates)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const data = await templateApi.getCategories()
+      setCategories(['All', ...data.categories])
+    } catch (error) {
+      console.error('Error fetching categories:', error)
     }
   }
 
@@ -285,9 +285,16 @@ const TemplateSelection = () => {
               <h3 className="template-name">{template.name}</h3>
               <p className="template-description">{template.description}</p>
               <div className="template-tags">
-                {template.tags.slice(0, 3).map((tag, index) => (
-                  <span key={index} className="template-tag">{tag}</span>
-                ))}
+                {(() => {
+                  try {
+                    const features = JSON.parse(template.features || '[]')
+                    return features.slice(0, 3).map((feature: string, index: number) => (
+                      <span key={index} className="template-tag">{feature}</span>
+                    ))
+                  } catch {
+                    return null
+                  }
+                })()}
               </div>
             </div>
           </motion.div>

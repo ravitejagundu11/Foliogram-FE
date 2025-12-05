@@ -17,8 +17,8 @@ const Layout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const isAdmin = hasRole(['admin'])
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/login')
   }
 
