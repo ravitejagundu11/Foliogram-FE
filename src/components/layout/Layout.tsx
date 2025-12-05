@@ -331,7 +331,7 @@ const Layout = () => {
               />
             ) : (
               <div className="profile-avatar">
-                {`${user.firstName?.charAt(0) ?? ''}${user.lastName?.charAt(0) ?? ''}`}
+                {user.firstName?.charAt(0) ?? user.lastName?.charAt(0) ?? 'U'}
               </div>
             )}
           </button>
