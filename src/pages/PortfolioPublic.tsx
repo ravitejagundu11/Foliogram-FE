@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { apiClient, portfolioApi } from '../services/api'
 import type { Portfolio, Project, Skill, Testimonial } from '../types/portfolio'
+import { transformPortfolio } from '../utils/portfolioTransform'
 import ClassicProfessionalTemplate from '../components/templates/ClassicProfessionalTemplate'
 import ModernDarkTemplate from '../components/templates/ModernDarkTemplate'
 import ProjectCentricTemplate from '../components/templates/ProjectCentricTemplate'
@@ -28,6 +29,21 @@ import FashionDesignerTemplate from '../components/templates/FashionDesignerTemp
 import InteriorDesignerTemplate from '../components/templates/InteriorDesignerTemplate'
 import TeacherTemplate from '../components/templates/TeacherTemplate'
 import '../styles/PortfolioPublic.css'
+
+// Template UUID to component mapping
+// These UUIDs should match your database template IDs
+const TEMPLATE_MAP: Record<string, string> = {
+  // Business templates
+  '48877b9f-d581-11f0-b19b-6ada76144272': 'professional-business',  // Professional Business
+  '48877cdb-d581-11f0-b19b-6ada76144272': 'entrepreneur',           // Entrepreneur
+  // Creator templates  
+  '48879cb5-d581-11f0-b19b-6ada76144272': 'content-creator',        // Content Creator
+  '48879e1f-d581-11f0-b19b-6ada76144272': 'blogger',                // Blogger
+  // Designer templates
+  '4886fc45-d581-11f0-b19b-6ada76144272': 'creative-studio',        // Creative Studio
+  '4886fd74-d581-11f0-b19b-6ada76144272': 'ui-ux-portfolio',        // UI/UX Portfolio
+  '4886fdca-d581-11f0-b19b-6ada76144272': 'artistic-vision',        // Artistic Vision
+}
 
 const PortfolioPublic = () => {
   const { username, portfolioId } = useParams<{ username?: string; portfolioId?: string }>()
@@ -67,31 +83,51 @@ const PortfolioPublic = () => {
       currentUser
     }
 
+    // Get template type from UUID mapping
+    const templateType = TEMPLATE_MAP[portfolio.templateId] || 'default'
+    
+    console.log('Rendering template:', portfolio.templateId, '->', templateType)
+
     // Route to different templates based on templateId
-    switch (portfolio.templateId) {
-      case '1': // Classic Professional
+    switch (templateType) {
+      case 'professional-business':
+      case 'entrepreneur':
         return <ClassicProfessionalTemplate {...templateProps} />
-      case '2': // Modern Dark (Modern UNO)
+      case 'content-creator':
+      case 'blogger':
         return <ModernDarkTemplate {...templateProps} />
-      case '3': // Project-Centric
+      case 'creative-studio':
+      case 'artistic-vision':
         return <ProjectCentricTemplate {...templateProps} />
-      case '4': // Minimalist Academic
+      case 'ui-ux-portfolio':
         return <MinimalistAcademicTemplate {...templateProps} />
-      case '5': // Modern Academic
-        return <ModernAcademicTemplate {...templateProps} />
-      case '6': // Photography
-        return <PhotographyTemplate {...templateProps} />
-      case '7': // Architect
-        return <ArchitectTemplate {...templateProps} />
-      case '8': // Fashion Designer
-        return <FashionDesignerTemplate {...templateProps} />
-      case '9': // Interior Designer
-        return <InteriorDesignerTemplate {...templateProps} />
-      case '10': // Teacher
-        return <TeacherTemplate {...templateProps} />
       default:
-        // Default to classic template
-        return <ClassicProfessionalTemplate {...templateProps} />
+        // Also check for simple numeric IDs for backwards compatibility
+        switch (portfolio.templateId) {
+          case '1':
+            return <ClassicProfessionalTemplate {...templateProps} />
+          case '2':
+            return <ModernDarkTemplate {...templateProps} />
+          case '3':
+            return <ProjectCentricTemplate {...templateProps} />
+          case '4':
+            return <MinimalistAcademicTemplate {...templateProps} />
+          case '5':
+            return <ModernAcademicTemplate {...templateProps} />
+          case '6':
+            return <PhotographyTemplate {...templateProps} />
+          case '7':
+            return <ArchitectTemplate {...templateProps} />
+          case '8':
+            return <FashionDesignerTemplate {...templateProps} />
+          case '9':
+            return <InteriorDesignerTemplate {...templateProps} />
+          case '10':
+            return <TeacherTemplate {...templateProps} />
+          default:
+            // Default to classic template
+            return <ClassicProfessionalTemplate {...templateProps} />
+        }
     }
   }
 
@@ -122,14 +158,21 @@ const PortfolioPublic = () => {
           ? await portfolioApi.getPublicById(identifier)
           : await portfolioApi.getPublicBySlug(identifier)
 
-        const projectsData = portfolioData.projects || []
-        const skillsData = portfolioData.skills || []
-        const testimonialsData = portfolioData.testimonials || []
+        console.log('Raw portfolio data from API:', portfolioData)
         
-        console.log('Successfully loaded from API:', portfolioData)
+        // Transform backend format to frontend format (includes projects, skills, testimonials)
+        const transformedPortfolio = transformPortfolio(portfolioData)
+        console.log('Transformed portfolio:', transformedPortfolio)
+        
+        // Get transformed data from the portfolio
+        const projectsData = transformedPortfolio.projects || []
+        const skillsData = transformedPortfolio.skills || []
+        const testimonialsData = transformedPortfolio.testimonials || []
+        
+        console.log('Projects:', projectsData.length, 'Skills:', skillsData.length, 'Testimonials:', testimonialsData.length)
         
         // Set the data
-        setPortfolio(portfolioData)
+        setPortfolio(transformedPortfolio)
         setProjects(projectsData)
         setSkills(skillsData)
         setTestimonials(testimonialsData)

@@ -258,7 +258,7 @@ const TemplateSelection = () => {
             onClick={() => handleSelectTemplate(template.id)}
           >
             {/* Premium Badge */}
-            {template.isPremium && (
+            {template.is_premium && (
               <div className="premium-badge">
                 <Sparkles size={14} />
                 <span>Premium</span>
@@ -274,7 +274,7 @@ const TemplateSelection = () => {
 
             {/* Template Thumbnail */}
             <div className="template-thumbnail">
-              <img src={template.thumbnail} alt={template.name} />
+              <img src={template.thumbnail_url} alt={template.name} />
               <div className="template-overlay">
                 <button className="preview-button">Preview</button>
               </div>

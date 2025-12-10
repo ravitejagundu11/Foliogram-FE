@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@contexts/AuthContext'
 import { apiClient } from '@services/api'
 import type { Portfolio } from '../types/portfolio'
+import { transformPortfolio } from '../utils/portfolioTransform'
 import PageHeader from '@components/PageHeader'
 import {
   Eye,
@@ -49,10 +50,26 @@ const MyPortfolios = () => {
     
     try {
       // Try API first
-      const response: any = await apiClient.get('/portfolios/my-portfolios')
-      setPortfolios(response.data)
+      console.log('Fetching portfolios from API...')
+      const portfoliosData = await apiClient.get('/portfolios/my-portfolios')
+      console.log('API Response (already unwrapped by apiClient):', portfoliosData)
+      
+      // apiClient.get() already unwraps response.data.data, so portfoliosData is the array directly
+      const portfoliosArray = Array.isArray(portfoliosData) ? portfoliosData : []
+      console.log('Portfolios array before transform:', portfoliosArray)
+      
+      // Transform backend format to frontend format
+      const transformedPortfolios = portfoliosArray.map(transformPortfolio)
+      console.log('Transformed portfolios:', transformedPortfolios)
+      setPortfolios(transformedPortfolios)
+      console.log('Portfolios set successfully, count:', transformedPortfolios.length)
     } catch (err) {
       console.error('Error loading portfolios from API:', err)
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        response: (err as any)?.response,
+        status: (err as any)?.response?.status
+      })
       
       // Fallback to localStorage
       try {

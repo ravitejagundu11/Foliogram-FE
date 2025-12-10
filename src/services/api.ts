@@ -36,7 +36,10 @@ class ApiClient {
     this.instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        // Only redirect to login if 401 and user is not already on login/register pages
+        if (error.response?.status === 401 && 
+            !window.location.pathname.includes('/login') && 
+            !window.location.pathname.includes('/register')) {
           localStorage.removeItem('token')
           window.location.href = '/login'
         }
@@ -129,17 +132,17 @@ export interface Portfolio {
 }
 
 export const portfolioApi = {
-  getAll: () => apiClient.get<Portfolio[]>('/foliogram/portfolios/my'),
-  getById: (id: string) => apiClient.get<Portfolio>(`/foliogram/portfolios/${id}`),
-  getBySlug: (slug: string) => apiClient.get<Portfolio>(`/foliogram/portfolios/slug/${slug}`),
-  create: (data: CreatePortfolioRequest) => apiClient.post<Portfolio>('/foliogram/portfolios', data),
-  update: (id: string, data: UpdatePortfolioRequest) => apiClient.put<Portfolio>(`/foliogram/portfolios/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/foliogram/portfolios/${id}`),
+  getAll: () => apiClient.get<Portfolio[]>('/portfolios/my'),
+  getById: (id: string) => apiClient.get<Portfolio>(`/portfolios/${id}`),
+  getBySlug: (slug: string) => apiClient.get<Portfolio>(`/portfolios/slug/${slug}`),
+  create: (data: CreatePortfolioRequest) => apiClient.post<Portfolio>('/portfolios', data),
+  update: (id: string, data: UpdatePortfolioRequest) => apiClient.put<Portfolio>(`/portfolios/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/portfolios/${id}`),
   // Public endpoints (no auth required)
-  getPublicById: (id: string) => apiClient.get<Portfolio>(`/foliogram/public/portfolios/${id}`),
-  getPublicBySlug: (slug: string) => apiClient.get<Portfolio>(`/foliogram/public/portfolios/slug/${slug}`),
+  getPublicById: (id: string) => apiClient.get<Portfolio>(`/public/portfolios/${id}`),
+  getPublicBySlug: (slug: string) => apiClient.get<Portfolio>(`/public/portfolios/slug/${slug}`),
   getPublicPortfolios: (params?: { page?: number; limit?: number; category?: string; search?: string }) => 
-    apiClient.get<{ portfolios: Portfolio[]; pagination: any }>('/foliogram/public/portfolios', { params }),
+    apiClient.get<{ portfolios: Portfolio[]; pagination: any }>('/public/portfolios', { params }),
 }
 
 // Template API endpoints
@@ -164,10 +167,10 @@ export const templateApi = {
     if (category) params.append('category', category)
     if (premium) params.append('premium', 'true')
     const query = params.toString()
-    return apiClient.get<Template[]>(`/foliogram/templates${query ? `?${query}` : ''}`)
+    return apiClient.get<Template[]>(`/templates${query ? `?${query}` : ''}`)
   },
-  getById: (id: string) => apiClient.get<Template>(`/foliogram/templates/${id}`),
-  getCategories: () => apiClient.get<{ categories: string[] }>('/foliogram/templates/categories'),
+  getById: (id: string) => apiClient.get<Template>(`/templates/${id}`),
+  getCategories: () => apiClient.get<{ categories: string[] }>('/templates/categories'),
 }
 
 // Upload API endpoints
@@ -175,18 +178,18 @@ export const uploadApi = {
   uploadImage: (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
-    return apiClient.post<{ url: string; filename: string; size: number }>('/foliogram/upload/image', formData, {
+    return apiClient.post<{ url: string; filename: string; size: number }>('/upload/image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
   uploadMultiple: (files: File[]) => {
     const formData = new FormData()
     files.forEach(file => formData.append('files', file))
-    return apiClient.post<{ uploaded: Array<{ url: string; filename: string; size: number }>; count: number; errors?: string[] }>('/foliogram/upload/multiple', formData, {
+    return apiClient.post<{ uploaded: Array<{ url: string; filename: string; size: number }>; count: number; errors?: string[] }>('/upload/multiple', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
-  deleteFile: (filename: string) => apiClient.delete(`/foliogram/upload/${filename}`),
+  deleteFile: (filename: string) => apiClient.delete(`/upload/${filename}`),
 }
 
 // Project, Skill, Testimonial interfaces
@@ -240,32 +243,84 @@ export interface Testimonial {
 
 // Project API endpoints
 export const projectApi = {
+  getAll: (portfolioId: string) => 
+    apiClient.get<Project[]>(`/portfolios/${portfolioId}/projects`),
   create: (portfolioId: string, data: Partial<Project>) => 
-    apiClient.post<Project>(`/foliogram/portfolios/${portfolioId}/projects`, data),
+    apiClient.post<Project>(`/portfolios/${portfolioId}/projects`, data),
   update: (portfolioId: string, projectId: string, data: Partial<Project>) => 
-    apiClient.put<Project>(`/foliogram/portfolios/${portfolioId}/projects/${projectId}`, data),
+    apiClient.put<Project>(`/portfolios/${portfolioId}/projects/${projectId}`, data),
   delete: (portfolioId: string, projectId: string) => 
-    apiClient.delete(`/foliogram/portfolios/${portfolioId}/projects/${projectId}`),
+    apiClient.delete(`/portfolios/${portfolioId}/projects/${projectId}`),
 }
 
 // Skill API endpoints
 export const skillApi = {
+  getAll: (portfolioId: string) => 
+    apiClient.get<Skill[]>(`/portfolios/${portfolioId}/skills`),
   create: (portfolioId: string, data: Partial<Skill>) => 
-    apiClient.post<Skill>(`/foliogram/portfolios/${portfolioId}/skills`, data),
+    apiClient.post<Skill>(`/portfolios/${portfolioId}/skills`, data),
   update: (portfolioId: string, skillId: string, data: Partial<Skill>) => 
-    apiClient.put<Skill>(`/foliogram/portfolios/${portfolioId}/skills/${skillId}`, data),
+    apiClient.put<Skill>(`/portfolios/${portfolioId}/skills/${skillId}`, data),
   delete: (portfolioId: string, skillId: string) => 
-    apiClient.delete(`/foliogram/portfolios/${portfolioId}/skills/${skillId}`),
+    apiClient.delete(`/portfolios/${portfolioId}/skills/${skillId}`),
 }
 
 // Testimonial API endpoints
 export const testimonialApi = {
+  getAll: (portfolioId: string) => 
+    apiClient.get<Testimonial[]>(`/portfolios/${portfolioId}/testimonials`),
   create: (portfolioId: string, data: Partial<Testimonial>) => 
-    apiClient.post<Testimonial>(`/foliogram/portfolios/${portfolioId}/testimonials`, data),
+    apiClient.post<Testimonial>(`/portfolios/${portfolioId}/testimonials`, data),
   update: (portfolioId: string, testimonialId: string, data: Partial<Testimonial>) => 
-    apiClient.put<Testimonial>(`/foliogram/portfolios/${portfolioId}/testimonials/${testimonialId}`, data),
+    apiClient.put<Testimonial>(`/portfolios/${portfolioId}/testimonials/${testimonialId}`, data),
   delete: (portfolioId: string, testimonialId: string) => 
-    apiClient.delete(`/foliogram/portfolios/${portfolioId}/testimonials/${testimonialId}`),
+    apiClient.delete(`/portfolios/${portfolioId}/testimonials/${testimonialId}`),
+}
+
+// Education API endpoints
+export const educationApi = {
+  getAll: (portfolioId: string) => 
+    apiClient.get(`/portfolios/${portfolioId}/education`),
+  create: (portfolioId: string, data: Record<string, unknown>) => 
+    apiClient.post(`/portfolios/${portfolioId}/education`, data),
+  update: (portfolioId: string, educationId: string, data: Record<string, unknown>) => 
+    apiClient.put(`/portfolios/${portfolioId}/education/${educationId}`, data),
+  delete: (portfolioId: string, educationId: string) => 
+    apiClient.delete(`/portfolios/${portfolioId}/education/${educationId}`),
+}
+
+// Experience API endpoints
+export const experienceApi = {
+  getAll: (portfolioId: string) => 
+    apiClient.get(`/portfolios/${portfolioId}/experience`),
+  create: (portfolioId: string, data: Record<string, unknown>) => 
+    apiClient.post(`/portfolios/${portfolioId}/experience`, data),
+  update: (portfolioId: string, experienceId: string, data: Record<string, unknown>) => 
+    apiClient.put(`/portfolios/${portfolioId}/experience/${experienceId}`, data),
+  delete: (portfolioId: string, experienceId: string) => 
+    apiClient.delete(`/portfolios/${portfolioId}/experience/${experienceId}`),
+}
+
+// Publication API endpoints
+export const publicationApi = {
+  getAll: (portfolioId: string) => 
+    apiClient.get(`/portfolios/${portfolioId}/publications`),
+  create: (portfolioId: string, data: Record<string, unknown>) => 
+    apiClient.post(`/portfolios/${portfolioId}/publications`, data),
+  update: (portfolioId: string, publicationId: string, data: Record<string, unknown>) => 
+    apiClient.put(`/portfolios/${portfolioId}/publications/${publicationId}`, data),
+  delete: (portfolioId: string, publicationId: string) => 
+    apiClient.delete(`/portfolios/${portfolioId}/publications/${publicationId}`),
+}
+
+// Contact API endpoints
+export const contactApi = {
+  get: (portfolioId: string) => 
+    apiClient.get(`/portfolios/${portfolioId}/contact`),
+  createOrUpdate: (portfolioId: string, data: Record<string, unknown>) => 
+    apiClient.post(`/portfolios/${portfolioId}/contact`, data),
+  delete: (portfolioId: string) => 
+    apiClient.delete(`/portfolios/${portfolioId}/contact`),
 }
 
 // Auth API endpoints
@@ -290,8 +345,33 @@ export interface AuthResponse {
   }
 }
 
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+}
+
+export interface ChangeEmailRequest {
+  new_email: string
+  current_password: string
+}
+
+export interface UpdateProfileRequest {
+  full_name?: string
+  email?: string
+  mobile?: string
+  location?: string
+  profile_picture?: string
+  current_password?: string // Required when changing email
+}
+
 export const authApi = {
-  register: (data: RegisterRequest) => apiClient.post<AuthResponse>('/foliogram/register', data),
-  login: (data: LoginRequest) => apiClient.post<AuthResponse>('/foliogram/login', data),
-  logout: () => apiClient.post('/foliogram/logout'),
+  register: (data: RegisterRequest) => apiClient.post<AuthResponse>('/register', data),
+  login: (data: LoginRequest) => apiClient.post<AuthResponse>('/login', data),
+  logout: () => apiClient.post('/logout'),
+  changePassword: (data: ChangePasswordRequest) => 
+    apiClient.put<{ message: string }>('/change-password', data),
+  changeEmail: (data: ChangeEmailRequest) => 
+    apiClient.put<{ message: string; user: any; token: string }>('/change-email', data),
+  updateProfile: (data: UpdateProfileRequest) => 
+    apiClient.put<{ message: string; user: any; token?: string }>('/profile', data),
 }

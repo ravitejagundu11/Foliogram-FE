@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useAuth } from '@contexts/AuthContext'
+import { authApi } from '@services/api'
 import '../styles/ProfilePage.css'
 
 const ProfilePage = () => {
@@ -36,10 +37,8 @@ const ProfilePage = () => {
   const [profileImage, setProfileImageState] = useState(user?.profileImage || '')
   const [imageError, setImageError] = useState('')
 
-  const VALID_PASSWORD = 'password123'
-
   // Handle Edit Profile
-  const handleEditProfile = (e: React.FormEvent) => {
+  const handleEditProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setEditProfileError('')
     setEditProfileSuccess('')
@@ -49,18 +48,31 @@ const ProfilePage = () => {
       return
     }
 
-    updateUser({
-      firstName: editProfile.firstName,
-      lastName: editProfile.lastName,
-      contactNumber: editProfile.contactNumber,
-    })
+    try {
+      await authApi.updateProfile({
+        full_name: `${editProfile.firstName} ${editProfile.lastName}`,
+        mobile: editProfile.contactNumber,
+      })
 
-    setEditProfileSuccess('Profile updated successfully!')
-    setTimeout(() => setEditProfileSuccess(''), 3000)
+      updateUser({
+        firstName: editProfile.firstName,
+        lastName: editProfile.lastName,
+        contactNumber: editProfile.contactNumber,
+      })
+
+      setEditProfileSuccess('Profile updated successfully!')
+      setTimeout(() => setEditProfileSuccess(''), 3000)
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.errors?.full_name ||
+                          error.response?.data?.errors?.mobile ||
+                          error.response?.data?.errors?.message ||
+                          'Failed to update profile. Please try again.'
+      setEditProfileError(errorMessage)
+    }
   }
 
   // Handle Change Username
-  const handleChangeUsername = (e: React.FormEvent) => {
+  const handleChangeUsername = async (e: React.FormEvent) => {
     e.preventDefault()
     setChangeUsernameError('')
     setChangeUsernameSuccess('')
@@ -70,19 +82,38 @@ const ProfilePage = () => {
       return
     }
 
-    if (changeUsername.currentPassword !== VALID_PASSWORD) {
-      setChangeUsernameError('Current password is incorrect')
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(changeUsername.newUsername)) {
+      setChangeUsernameError('Please enter a valid email address')
       return
     }
 
-    updateUser({ username: changeUsername.newUsername })
-    setChangeUsername({ newUsername: '', currentPassword: '' })
-    setChangeUsernameSuccess('Username changed successfully!')
-    setTimeout(() => setChangeUsernameSuccess(''), 3000)
+    try {
+      const response = await authApi.updateProfile({
+        email: changeUsername.newUsername,
+        current_password: changeUsername.currentPassword,
+      })
+
+      // Update token if provided
+      if (response.token) {
+        localStorage.setItem('token', response.token)
+      }
+
+      setChangeUsername({ newUsername: '', currentPassword: '' })
+      setChangeUsernameSuccess('Email changed successfully!')
+      setTimeout(() => setChangeUsernameSuccess(''), 3000)
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.errors?.current_password || 
+                          error.response?.data?.errors?.email ||
+                          error.response?.data?.errors?.message ||
+                          'Failed to change email. Please try again.'
+      setChangeUsernameError(errorMessage)
+    }
   }
 
   // Handle Reset Password
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setResetPasswordError('')
     setResetPasswordSuccess('')
@@ -92,24 +123,32 @@ const ProfilePage = () => {
       return
     }
 
-    if (resetPassword.currentPassword !== VALID_PASSWORD) {
-      setResetPasswordError('Current password is incorrect')
-      return
-    }
-
     if (resetPassword.newPassword !== resetPassword.confirmPassword) {
       setResetPasswordError('New passwords do not match')
       return
     }
 
-    if (resetPassword.newPassword.length < 6) {
-      setResetPasswordError('Password must be at least 6 characters')
+    if (resetPassword.newPassword.length < 8) {
+      setResetPasswordError('Password must be at least 8 characters')
       return
     }
 
-    setResetPassword({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    setResetPasswordSuccess('Password reset successfully!')
-    setTimeout(() => setResetPasswordSuccess(''), 3000)
+    try {
+      await authApi.changePassword({
+        current_password: resetPassword.currentPassword,
+        new_password: resetPassword.newPassword,
+      })
+
+      setResetPassword({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setResetPasswordSuccess('Password changed successfully!')
+      setTimeout(() => setResetPasswordSuccess(''), 3000)
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.errors?.current_password || 
+                          error.response?.data?.errors?.new_password ||
+                          error.response?.data?.errors?.message ||
+                          'Failed to change password. Please try again.'
+      setResetPasswordError(errorMessage)
+    }
   }
 
   // Handle Image Upload
@@ -232,19 +271,19 @@ const ProfilePage = () => {
             </form>
           </div>
 
-          {/* Change Username */}
+          {/* Change Email */}
           <div className="profile-section">
-            <h2 className="profile-section-title">Change Username</h2>
+            <h2 className="profile-section-title">Change Email</h2>
             <form onSubmit={handleChangeUsername}>
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">New Username</label>
+                  <label className="form-label">New Email</label>
                   <input
-                    type="text"
+                    type="email"
                     value={changeUsername.newUsername}
                     onChange={(e) => setChangeUsername({ ...changeUsername, newUsername: e.target.value })}
                     className="form-input"
-                    placeholder="Enter new username"
+                    placeholder="Enter new email address"
                     required
                   />
                 </div>
@@ -263,7 +302,7 @@ const ProfilePage = () => {
               {changeUsernameError && <p className="error-text">{changeUsernameError}</p>}
               {changeUsernameSuccess && <p className="success-text">{changeUsernameSuccess}</p>}
               <button type="submit" className="btn-primary mt-6">
-                Change Username
+                Change Email
               </button>
             </form>
           </div>

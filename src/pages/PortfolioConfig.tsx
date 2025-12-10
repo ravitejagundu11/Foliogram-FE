@@ -4,8 +4,9 @@ import { motion } from 'framer-motion'
 import { useDropzone } from 'react-dropzone'
 import { SketchPicker } from 'react-color'
 import { useAuth } from '@contexts/AuthContext'
-import { apiClient, projectApi, skillApi, testimonialApi } from '@services/api'
+import { apiClient, projectApi, skillApi, testimonialApi, educationApi, experienceApi, publicationApi, contactApi } from '@services/api'
 import type { PortfolioConfig, Template, Project, Skill, Testimonial, Portfolio } from '../types/portfolio'
+import { transformPortfolio, transformProject, transformSkill, transformTestimonial } from '../utils/portfolioTransform'
 import ProjectForm from '@components/ProjectForm'
 import SkillsList from '@components/SkillsList'
 import TestimonialsList from '@components/TestimonialsList'
@@ -153,9 +154,12 @@ const PortfolioConfigComponent = () => {
   }, [templateId, location.state])
 
   // Load projects, skills, and testimonials when portfolioId is set
+  // Skip if content was already loaded with the portfolio (edit mode)
   useEffect(() => {
     const fetchPortfolioContent = async () => {
       if (!portfolioId) return
+      // Skip if already loaded via loadExistingPortfolio
+      if (projects.length > 0 || skills.length > 0 || testimonials.length > 0) return
 
       try {
         const [projectsData, skillsData, testimonialsData] = await Promise.all([
@@ -164,9 +168,10 @@ const PortfolioConfigComponent = () => {
           testimonialApi.getAll(portfolioId)
         ])
         
-        setProjects(projectsData as Project[])
-        setSkills(skillsData as Skill[])
-        setTestimonials(testimonialsData as Testimonial[])
+        // Transform from snake_case to camelCase
+        setProjects((projectsData as unknown as Record<string, unknown>[]).map(transformProject))
+        setSkills((skillsData as unknown as Record<string, unknown>[]).map(transformSkill))
+        setTestimonials((testimonialsData as unknown as Record<string, unknown>[]).map(transformTestimonial))
       } catch (error) {
         console.error('Error fetching portfolio content:', error)
       }
@@ -223,7 +228,12 @@ const PortfolioConfigComponent = () => {
       // Try API first
       try {
         const response: any = await apiClient.get(`/portfolios/${id}`)
-        const portfolio = response.data as Portfolio
+        // apiClient returns data directly (not response.data)
+        // Transform from snake_case backend format to camelCase frontend format
+        const portfolio = transformPortfolio(response as Record<string, unknown>)
+        
+        console.log('Raw API response:', response)
+        console.log('Transformed portfolio:', portfolio)
         
         // Populate config with existing data
         setConfig({
@@ -243,9 +253,9 @@ const PortfolioConfigComponent = () => {
         setPortfolioId(portfolio.id)
         
         // Load embedded content if available
-        if (portfolio.projects) setProjects(portfolio.projects)
-        if (portfolio.skills) setSkills(portfolio.skills)
-        if (portfolio.testimonials) setTestimonials(portfolio.testimonials)
+        if (portfolio.projects && portfolio.projects.length > 0) setProjects(portfolio.projects)
+        if (portfolio.skills && portfolio.skills.length > 0) setSkills(portfolio.skills)
+        if (portfolio.testimonials && portfolio.testimonials.length > 0) setTestimonials(portfolio.testimonials)
         if (portfolio.sectionOrder) setSectionOrder(portfolio.sectionOrder)
         if (portfolio.sectionNames) setSectionNames(portfolio.sectionNames)
         if (portfolio.sectionContent) setSectionContent(portfolio.sectionContent)
@@ -385,13 +395,13 @@ const PortfolioConfigComponent = () => {
         }
       }
 
-      // Generate portfolio ID if new
-      const savedPortfolioId = config.id || `portfolio-${Date.now()}`
+      // Generate portfolio ID if new - this will be replaced by backend UUID
+      const savedPortfolioId = config.id || null
 
-      // Generate slug from name or use ID
+      // Generate slug from name or use temporary slug
       const slug = config.name 
         ? config.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-        : savedPortfolioId
+        : `portfolio-${Date.now()}`
 
       // Get existing portfolio data to preserve certain fields
       let existingPortfolio: any = null
@@ -448,89 +458,347 @@ const PortfolioConfigComponent = () => {
       try {
         // Try to save to backend API
         if (config.id) {
-          await apiClient.put(`/portfolios/${config.id}`, portfolioData)
+          // Prepare update data with only fields backend expects
+          const updateData = {
+            title: config.name || 'Untitled Portfolio',
+            slug: slug,
+            headline: config.headline || '',
+            description: config.description || '',
+            profile_picture: profilePictureUrl || config.profilePicture || '',
+            primary_color: config.theme?.primaryColor || '#3B82F6',
+            secondary_color: config.theme?.secondaryColor || '#10B981',
+            heading_font: config.typography?.headingFont || 'Inter',
+            body_font: config.typography?.bodyFont || 'Open Sans',
+            layout_style: JSON.stringify(config.layout || {}),
+            social_links: config.socialLinks || {}
+          }
+          await apiClient.put(`/portfolios/${config.id}`, updateData)
         } else {
-          const response = await apiClient.post<{ id: string; slug?: string }>('/portfolios', portfolioData)
-          const newId = response.id || savedPortfolioId
+          // Prepare create data with only fields backend expects
+          const createData = {
+            title: config.name || 'Untitled Portfolio',
+            slug: slug,
+            headline: config.headline || '',
+            description: config.description || '',
+            profile_picture: profilePictureUrl || config.profilePicture || '',
+            template_id: config.templateId || templateId || '',
+            primary_color: config.theme?.primaryColor || '#3B82F6',
+            secondary_color: config.theme?.secondaryColor || '#10B981',
+            heading_font: config.typography?.headingFont || 'Inter',
+            body_font: config.typography?.bodyFont || 'Open Sans',
+            layout_style: JSON.stringify(config.layout || {}),
+            social_links: config.socialLinks || {}
+          }
+          const response: any = await apiClient.post('/portfolios', createData)
+          // Handle response structure: { status: 201, data: portfolio }
+          const portfolioResponse = response.data || response
+          const newId = portfolioResponse.id
+          
+          // Update config and portfolioId with backend-generated UUID
           setConfig(prev => ({ ...prev, id: newId }))
           setPortfolioId(newId)
+          
+          // Update savedPortfolioId for subsequent operations
+          const updatedPortfolioId = newId
+          
+          // Save projects, skills, and testimonials using the new backend ID
+          if (projects.length > 0) {
+            await Promise.all(
+              projects.map(project => {
+                const projectData = { 
+                  title: project.title,
+                  description: project.description,
+                  techStack: project.techStack,
+                  images: project.images,
+                  demoUrl: project.demoUrl,
+                  codeUrl: project.codeUrl,
+                  featured: project.featured,
+                  order: project.order
+                }
+                // Always create new projects for new portfolio
+                return projectApi.create(updatedPortfolioId, projectData)
+              })
+            )
+          }
+
+          if (skills.length > 0) {
+            await Promise.all(
+              skills.map(skill => {
+                const skillData = { 
+                  name: skill.name,
+                  proficiency: skill.proficiency,
+                  category: skill.category
+                }
+                return skillApi.create(updatedPortfolioId, skillData)
+              })
+            )
+          }
+
+          if (testimonials.length > 0) {
+            await Promise.all(
+              testimonials.map(testimonial => {
+                const testimonialData = { 
+                  name: testimonial.name,
+                  role: testimonial.role,
+                  company: testimonial.company,
+                  content: testimonial.content,
+                  avatar: testimonial.avatar,
+                  rating: testimonial.rating
+                }
+                return testimonialApi.create(updatedPortfolioId, testimonialData)
+              })
+            )
+          }
+
+          // Save education entries for new portfolio
+          if (sectionContent.education && sectionContent.education.length > 0) {
+            await Promise.all(
+              sectionContent.education.map((edu: any) => {
+                const educationData = {
+                  // Map frontend field names to backend field names
+                  institution: edu.schoolName || edu.institution || '',
+                  degree: edu.level || edu.degree || '',
+                  field: edu.course || edu.field || '',
+                  start_date: edu.startDate || '',
+                  end_date: edu.endDate || '',
+                  grade: edu.grade || '',
+                  description: edu.description || '',
+                  sort_order: edu.order || 0
+                }
+                return educationApi.create(updatedPortfolioId, educationData)
+              })
+            )
+          }
+
+          // Save experience entries for new portfolio
+          if (sectionContent.experience && sectionContent.experience.length > 0) {
+            await Promise.all(
+              sectionContent.experience.map((exp: any) => {
+                // Convert achievements array back to description string
+                const description = Array.isArray(exp.achievements) 
+                  ? exp.achievements.filter((a: string) => a).join('\n• ')
+                  : (exp.description || '')
+                const experienceData = {
+                  // Map frontend field names to backend field names
+                  company: exp.company || '',
+                  position: exp.role || exp.position || '',
+                  location: exp.type || exp.location || '',
+                  start_date: exp.startDate || '',
+                  end_date: exp.endDate || '',
+                  is_current: exp.isCurrent || false,
+                  description: description,
+                  sort_order: exp.order || 0
+                }
+                return experienceApi.create(updatedPortfolioId, experienceData)
+              })
+            )
+          }
+
+          // Save publication entries for new portfolio
+          if (sectionContent.publications && sectionContent.publications.length > 0) {
+            await Promise.all(
+              sectionContent.publications.map((pub: any) => {
+                // Extract year from date if needed
+                const year = pub.year || (pub.date ? new Date(pub.date).getFullYear().toString() : '')
+                const publicationData = {
+                  // Map frontend field names to backend field names
+                  title: pub.title || '',
+                  authors: pub.authors || pub.organization || '',
+                  journal: pub.journal || pub.organization || '',
+                  conference: pub.conference || '',
+                  year: year,
+                  doi: pub.doi || '',
+                  url: pub.url || '',
+                  abstract: pub.abstract || pub.description || '',
+                  type: pub.type || '',
+                  sort_order: pub.order || 0
+                }
+                return publicationApi.create(updatedPortfolioId, publicationData)
+              })
+            )
+          }
+
+          // Save contact info for new portfolio
+          if (sectionContent.contact && sectionContent.contact.length > 0) {
+            const contactInfo = sectionContent.contact[0]
+            const contactData = {
+              email: contactInfo.email || '',
+              phone: contactInfo.phone || '',
+              address: contactInfo.address || '',
+              city: contactInfo.city || '',
+              country: contactInfo.country || '',
+              map_url: contactInfo.mapUrl || ''
+            }
+            await contactApi.createOrUpdate(updatedPortfolioId, contactData)
+          }
+          
+          alert('✓ Portfolio created successfully!')
+          navigate('/my-portfolios')
+          return // Exit early after creating new portfolio
         }
 
-        // Save projects, skills, and testimonials individually
-        if (projects.length > 0) {
-          await Promise.all(
-            projects.map(project => {
-              const projectData = { ...project, portfolioId: savedPortfolioId }
-              if (project.id && !project.id.startsWith('project-temp')) {
-                return projectApi.update(savedPortfolioId, project.id, projectData)
-              } else {
-                return projectApi.create(savedPortfolioId, projectData)
-              }
-            })
-          )
-        }
+        // For updates, save projects, skills, and testimonials
+        if (savedPortfolioId && config.id) {
+          if (projects.length > 0) {
+            await Promise.all(
+              projects.map(project => {
+                const projectData = { 
+                  title: project.title,
+                  description: project.description,
+                  techStack: project.techStack,
+                  images: project.images,
+                  demoUrl: project.demoUrl,
+                  codeUrl: project.codeUrl,
+                  featured: project.featured,
+                  order: project.order
+                }
+                if (project.id && !project.id.startsWith('project-temp') && !project.id.startsWith('project-')) {
+                  return projectApi.update(savedPortfolioId, project.id, projectData)
+                } else {
+                  return projectApi.create(savedPortfolioId, projectData)
+                }
+              })
+            )
+          }
 
-        if (skills.length > 0) {
-          await Promise.all(
-            skills.map(skill => {
-              const skillData = { ...skill, portfolioId: savedPortfolioId }
-              if (skill.id && !skill.id.startsWith('skill-')) {
-                return skillApi.update(savedPortfolioId, skill.id, skillData)
-              } else {
-                return skillApi.create(savedPortfolioId, skillData)
-              }
-            })
-          )
-        }
+          if (skills.length > 0) {
+            await Promise.all(
+              skills.map(skill => {
+                const skillData = { 
+                  name: skill.name,
+                  proficiency: skill.proficiency,
+                  category: skill.category
+                }
+                if (skill.id && !skill.id.startsWith('skill-')) {
+                  return skillApi.update(savedPortfolioId, skill.id, skillData)
+                } else {
+                  return skillApi.create(savedPortfolioId, skillData)
+                }
+              })
+            )
+          }
 
-        if (testimonials.length > 0) {
-          await Promise.all(
-            testimonials.map(testimonial => {
-              const testimonialData = { ...testimonial, portfolioId: savedPortfolioId }
-              if (testimonial.id && !testimonial.id.startsWith('testimonial-')) {
-                return testimonialApi.update(savedPortfolioId, testimonial.id, testimonialData)
-              } else {
-                return testimonialApi.create(savedPortfolioId, testimonialData)
-              }
-            })
-          )
+          if (testimonials.length > 0) {
+            await Promise.all(
+              testimonials.map(testimonial => {
+                const testimonialData = { 
+                  name: testimonial.name,
+                  role: testimonial.role,
+                  company: testimonial.company,
+                  content: testimonial.content,
+                  avatar: testimonial.avatar,
+                  rating: testimonial.rating
+                }
+                if (testimonial.id && !testimonial.id.startsWith('testimonial-')) {
+                  return testimonialApi.update(savedPortfolioId, testimonial.id, testimonialData)
+                } else {
+                  return testimonialApi.create(savedPortfolioId, testimonialData)
+                }
+              })
+            )
+          }
+
+          // Save education entries
+          if (sectionContent.education && sectionContent.education.length > 0) {
+            await Promise.all(
+              sectionContent.education.map((edu: any) => {
+                const educationData = {
+                  // Map frontend field names to backend field names
+                  institution: edu.schoolName || edu.institution || '',
+                  degree: edu.level || edu.degree || '',
+                  field: edu.course || edu.field || '',
+                  start_date: edu.startDate || '',
+                  end_date: edu.endDate || '',
+                  grade: edu.grade || '',
+                  description: edu.description || '',
+                  sort_order: edu.order || 0
+                }
+                if (edu.id && !edu.id.startsWith('education-')) {
+                  return educationApi.update(savedPortfolioId, edu.id, educationData)
+                } else {
+                  return educationApi.create(savedPortfolioId, educationData)
+                }
+              })
+            )
+          }
+
+          // Save experience entries
+          if (sectionContent.experience && sectionContent.experience.length > 0) {
+            await Promise.all(
+              sectionContent.experience.map((exp: any) => {
+                // Convert achievements array back to description string
+                const description = Array.isArray(exp.achievements) 
+                  ? exp.achievements.filter((a: string) => a).join('\n• ')
+                  : (exp.description || '')
+                const experienceData = {
+                  // Map frontend field names to backend field names
+                  company: exp.company || '',
+                  position: exp.role || exp.position || '',
+                  location: exp.type || exp.location || '',
+                  start_date: exp.startDate || '',
+                  end_date: exp.endDate || '',
+                  is_current: exp.isCurrent || false,
+                  description: description,
+                  sort_order: exp.order || 0
+                }
+                if (exp.id && !exp.id.startsWith('experience-')) {
+                  return experienceApi.update(savedPortfolioId, exp.id, experienceData)
+                } else {
+                  return experienceApi.create(savedPortfolioId, experienceData)
+                }
+              })
+            )
+          }
+
+          // Save publication entries
+          if (sectionContent.publications && sectionContent.publications.length > 0) {
+            await Promise.all(
+              sectionContent.publications.map((pub: any) => {
+                // Extract year from date if needed
+                const year = pub.year || (pub.date ? new Date(pub.date).getFullYear().toString() : '')
+                const publicationData = {
+                  // Map frontend field names to backend field names
+                  title: pub.title || '',
+                  authors: pub.authors || pub.organization || '',
+                  journal: pub.journal || pub.organization || '',
+                  conference: pub.conference || '',
+                  year: year,
+                  doi: pub.doi || '',
+                  url: pub.url || '',
+                  abstract: pub.abstract || pub.description || '',
+                  type: pub.type || '',
+                  sort_order: pub.order || 0
+                }
+                if (pub.id && !pub.id.startsWith('publication-')) {
+                  return publicationApi.update(savedPortfolioId, pub.id, publicationData)
+                } else {
+                  return publicationApi.create(savedPortfolioId, publicationData)
+                }
+              })
+            )
+          }
+
+          // Save contact info
+          if (sectionContent.contact && sectionContent.contact.length > 0) {
+            const contactInfo = sectionContent.contact[0]
+            const contactData = {
+              email: contactInfo.email || '',
+              phone: contactInfo.phone || '',
+              address: contactInfo.address || '',
+              city: contactInfo.city || '',
+              country: contactInfo.country || '',
+              map_url: contactInfo.mapUrl || ''
+            }
+            await contactApi.createOrUpdate(savedPortfolioId, contactData)
+          }
         }
       } catch (apiError: any) {
-        console.warn('Backend API not available, saving locally:', apiError.message)
-        
-        // Fallback: Save to localStorage if backend is not available
-        // Save in 'portfolios' object format (for Analytics page)
-        const localPortfolios = JSON.parse(localStorage.getItem('portfolios') || '{}')
-        
-        // Portfolio data already includes all necessary fields
-        const portfolioDataWithUser = portfolioData
-        
-        localPortfolios[savedPortfolioId] = portfolioDataWithUser
-        localStorage.setItem('portfolios', JSON.stringify(localPortfolios))
-        
-        // Also save as individual key (for My Portfolios page compatibility)
-        localStorage.setItem(`portfolio_${savedPortfolioId}`, JSON.stringify(portfolioDataWithUser))
-        
-        console.log('Portfolio saved to localStorage with userId:', portfolioDataWithUser.userId)
-        
-        // Update state
-        if (!config.id) {
-          setConfig(prev => ({ ...prev, id: savedPortfolioId }))
-          setPortfolioId(savedPortfolioId)
-        }
+        console.warn('Backend API not available:', apiError.message)
+        alert('❌ Failed to save portfolio: Backend API is not available. Please try again later.')
+        return
       }
 
-      // Generate unique published URL using the slug
-      const publishedUrl = `${window.location.origin}/portfolio/${slug}`
-      
-      const isUpdating = config.id !== undefined && config.id !== savedPortfolioId
-      const message = isUpdating 
-        ? `✅ Portfolio updated successfully!\n\nYour changes have been saved.${portfolioData.isPublished ? `\n\nView at: ${publishedUrl}` : ''}`
-        : `✅ Portfolio saved and published successfully!\n\nYour portfolio is now live at:\n${publishedUrl}\n\nShare this URL with anyone to showcase your work!`
-      
-      alert(message)
-      
-      // Redirect to My Portfolios page
+      alert('✓ Portfolio updated successfully!')
       navigate('/my-portfolios')
       
     } catch (error: any) {
@@ -612,10 +880,12 @@ const PortfolioConfigComponent = () => {
     formData.append('file', file)
 
     try {
-      const response = await apiClient.post<{ url: string }>('/upload', formData, {
+      const response = await apiClient.post<{ url: string }>('/upload/image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      return response.url
+      // Backend returns relative URL, prepend backend base URL
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+      return `${backendUrl}${response.url}`
     } catch (error) {
       console.error('Error uploading image:', error)
       throw error
