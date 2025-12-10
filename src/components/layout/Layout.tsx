@@ -41,19 +41,38 @@ const Layout = () => {
           {/* Logo Section */}
           <div className="sidebar-logo">
             {isSidebarCollapsed ? (
-              <span className="sidebar-logo-letter">F</span>
+              // Show profile icon when collapsed
+              <button
+                className="profile-icon-btn"
+                onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
+                title={isAuthenticated ? `${user?.firstName} ${user?.lastName}` : 'Sign In'}
+              >
+                {isAuthenticated && user?.profileImage ? (
+                  <img
+                    src={user.profileImage}
+                    alt="Profile"
+                    className="profile-icon-image"
+                  />
+                ) : isAuthenticated ? (
+                  <div className="profile-icon-avatar">
+                    {`${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}`}
+                  </div>
+                ) : (
+                  <UserCircle size={32} strokeWidth={1.5} />
+                )}
+              </button>
             ) : (
               <span className="sidebar-logo-text">Foliogram</span>
             )}
           </div>
 
-          {/* Collapse/Expand Button */}
+          {/* Collapse/Expand Button - Small Icon */}
           <button 
-            className="sidebar-collapse-btn"
+            className="sidebar-toggle-icon"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
-            {isSidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
 
           {/* Navigation Items */}
@@ -307,7 +326,7 @@ const Layout = () => {
         </div>
       </motion.nav>
 
-      {/* Top Right Profile Icon */}
+      {/* Top Right Profile Icon
       <motion.div
         className="layout-profile"
         initial={{ y: -50, opacity: 0 }}
@@ -341,7 +360,7 @@ const Layout = () => {
             <UserCircle size={36} strokeWidth={1.5} />
           </button>
         )}
-      </motion.div>
+      </motion.div> */}
 
       {/* Main Content */}
       <div className={`layout-main ${isSidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
